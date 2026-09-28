@@ -1,5 +1,5 @@
-const CACHE = 'ras-v1';
-const CORE = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE = 'ras-v2';
+const CORE = ['./', './index.html', './app.jsx', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(CORE)).then(() => self.skipWaiting()));
@@ -19,7 +19,7 @@ self.addEventListener('fetch', (e) => {
       const copy = res.clone();
       caches.open(CACHE).then((c) => c.put(req, copy));
       return res;
-    }).catch(() => caches.match(req).then((r) => r || caches.match('./index.html'))));
+    }).catch(() => caches.match(req).then((r) => r || (req.mode === 'navigate' ? caches.match(url.pathname.indexOf('admin') >= 0 ? './admin.html' : './index.html') : undefined))));
     return;
   }
   if (url.hostname === 'cdn.jsdelivr.net') {

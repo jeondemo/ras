@@ -1,27 +1,27 @@
 {
-  "id": "./",
-  "name": "RAS 철인3종",
-  "short_name": "RAS 철인3종",
-  "description": "과천여고 독서·예술·러닝 철인3종 인증",
-  "start_url": "./",
-  "scope": "./",
+  "id": "./admin.html",
+  "name": "RAS 관리자",
+  "short_name": "RAS 관리자",
+  "description": "RAS 철인3종 교사 관리 화면",
+  "start_url": "./admin.html",
+  "scope": "./admin.html",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "any",
   "background_color": "#0B0C0E",
   "theme_color": "#0B0C0E",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "admin-icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "icon-512.png",
+      "src": "admin-icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     },
     {
-      "src": "icon-maskable.png",
+      "src": "admin-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
