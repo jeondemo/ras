@@ -1082,6 +1082,18 @@ function StudentApp() {
 }
 
 /* ---------------------------------------------------------------- Admin */
+function TextScaleProbe() {
+  const ref = useRef(null);
+  const [v, setV] = useState(null);
+  useEffect(() => { if (ref.current) setV(Math.round(ref.current.getBoundingClientRect().height)); }, []);
+  return (
+    <div style={{ marginTop: 16, textAlign: 'center', fontSize: 11, color: 'var(--t3)' }}>
+      <span ref={ref} style={{ position: 'absolute', left: -9999, fontSize: 100, lineHeight: 1, display: 'inline-block' }}>가</span>
+      화면 점검 · 글자 배율 {v === null ? '-' : v + '%'} · 폭 {window.innerWidth}px
+    </div>
+  );
+}
+
 function AdminApp() {
   const [tokenA, setTokenA] = useState(store.sget('ras_admin'));
   const [pw, setPw] = useState('');
@@ -1102,6 +1114,7 @@ function AdminApp() {
         <input id="apw" className="input" type="password" placeholder="관리자 비밀번호" value={pw} onChange={e => setPw(e.target.value)} onKeyDown={e => e.key === 'Enter' && login()} />
         <button className="btn" onClick={login} disabled={!pw}>로그인</button>
       </div>
+      <TextScaleProbe />
     </div>
   );
   const tabs = [['queue', '승인함', sum && sum.recordPending], ['join', '가입 승인', sum && sum.joinPending], ['award', '교내 행사 인증'], ['people', '참가자']];
