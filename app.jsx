@@ -177,62 +177,113 @@ function fmtPace(sec, km) {
 function fmtNum(v) { return Number.isInteger(v) ? String(v) : (Math.round(v * 100) / 100).toString(); }
 
 /* ---------------------------------------------------------------- Join */
+function PwInput({ id, value, onChange, placeholder, onEnter }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div style={{ position: 'relative' }}>
+      <input id={id} className="input" type={show ? 'text' : 'password'} inputMode={show ? 'text' : undefined} autoComplete="current-password" placeholder={placeholder || '비밀번호'} value={value}
+        onChange={e => onChange(e.target.value.replace(/\s/g, ''))} onKeyDown={e => { if (e.key === 'Enter' && onEnter) onEnter(); }} style={{ paddingRight: 64 }} />
+      <button type="button" onClick={() => setShow(s => !s)} style={{ position: 'absolute', right: 6, top: 6, height: 40, padding: '0 12px', borderRadius: 12, border: 0, background: 'var(--sf2)', color: 'var(--t2)', fontSize: fz(12), fontWeight: 700 }}>{show ? '숨김' : '보기'}</button>
+    </div>
+  );
+}
+
 function JoinScreen({ onDone, prev, rejected }) {
-  const [hb, setHb] = useState(prev ? prev.hakbun : '');
+  const remembered = store.get('ras_hakbun') || '';
+  const [mode, setMode] = useState(prev || rejected ? 'join' : 'login');
+  const [hb, setHb] = useState(prev ? prev.hakbun : remembered);
   const [name, setName] = useState(prev ? prev.name : '');
   const [nick, setNick] = useState(prev ? prev.nick : '');
+  const [pw, setPw] = useState('');
   const [agree, setAgree] = useState(!!prev);
   const [nickMsg, setNickMsg] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [changeHb, setChangeHb] = useState(!remembered);
   const timer = useRef(null);
   useEffect(() => {
     clearTimeout(timer.current);
-    if (!nick) { setNickMsg(null); return; }
+    if (mode !== 'join' || !nick) { setNickMsg(null); return; }
     const local = nick.length < 2 || nick.length > 6 ? '2~6자로 써 주세요' : (!/^[가-힣A-Za-z0-9]+$/.test(nick) ? '한글·영문·숫자만 쓸 수 있어요' : '');
     if (local) { setNickMsg({ ok: false, text: local }); return; }
     setNickMsg({ ok: null, text: '확인 중…' });
     timer.current = setTimeout(() => {
       api('joinCheckNick', { nick }).then(r => setNickMsg({ ok: r.valid, text: r.message })).catch(() => setNickMsg(null));
     }, 450);
-  }, [nick]);
-  const valid = /^\d{5}$/.test(hb) && /^[가-힣]{2,5}$/.test(name) && nickMsg && nickMsg.ok && agree;
-  async function submit() {
+  }, [nick, mode]);
+  const pwOk = pw.length >= 4 && pw.length <= 20;
+  const loginValid = /^\d{5}$/.test(hb) && pw.length > 0;
+  const joinValid = /^\d{5}$/.test(hb) && /^[가-힣]{2,5}$/.test(name) && nickMsg && nickMsg.ok && pwOk && agree;
+  async function doLogin() {
     setBusy(true);
     try {
-      const r = await api('joinRequest', { hakbun: hb, name, nick, agree });
-      store.set('ras_token', r.token);
+      const r = await api('login', { hakbun: hb, password: pw });
+      store.set('ras_token', r.token); store.set('ras_hakbun', hb);
+      if (r.status === '승인') toast('로그인했어요');
       onDone();
     } catch (e) { toast(e.message); }
     setBusy(false);
   }
+  async function doJoin() {
+    setBusy(true);
+    try {
+      const r = await api('joinRequest', { hakbun: hb, name, nick, password: pw, agree });
+      store.set('ras_token', r.token); store.set('ras_hakbun', hb);
+      onDone();
+    } catch (e) { toast(e.message); }
+    setBusy(false);
+  }
+  const Tab = ({ k, label }) => <button type="button" onClick={() => setMode(k)} style={{ flex: 1, height: 44, border: 0, borderRadius: 14, background: mode === k ? 'var(--sf)' : 'transparent', boxShadow: mode === k ? 'inset 0 0 0 1.5px var(--r)' : 'none', color: mode === k ? 'var(--tx)' : 'var(--t2)', fontSize: fz(15), fontWeight: mode === k ? 800 : 600 }}>{label}</button>;
   return (
     <div className="app nonav fade">
-      <div style={{ padding: '56px 24px 0' }}><Logo big /></div>
-      <p style={{ margin: '18px 24px 0', fontSize: fz(15), lineHeight: 1.55, color: 'var(--t2)' }}>독서 · 예술 · 러닝 세 종목을 모두 완주하면 <b style={{ color: 'var(--tx)' }}>철인</b>이 돼요.</p>
+      <div style={{ padding: '48px 24px 0' }}><Logo big /></div>
+      <p style={{ margin: '16px 24px 0', fontSize: fz(15), lineHeight: 1.55, color: 'var(--t2)' }}>독서 · 예술 · 러닝 세 종목을 모두 완주하면 <b style={{ color: 'var(--tx)' }}>철인</b>이 돼요.</p>
       {rejected && <div style={{ margin: '16px 16px 0', padding: '12px 14px', borderRadius: 14, background: 'rgba(255,107,90,.1)', boxShadow: 'inset 0 0 0 1px rgba(255,107,90,.35)', color: '#FFB4AA', fontSize: fz(13) }}>지난 신청이 반려됐어요. 학번과 이름을 다시 확인해 주세요.</div>}
-      <section className="pad" style={{ paddingTop: 24 }}>
-        <div className="card col" style={{ padding: 18, gap: 14 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '130px minmax(0,1fr)', gap: 10 }}>
-            <label className="col" style={{ gap: 6 }}><span className="label">학번</span>
-              <input id="hb" className="input" inputMode="numeric" maxLength={5} placeholder="20312" value={hb} onChange={e => setHb(e.target.value.replace(/\D/g, ''))} />
-              <span className="dim" style={{ fontSize: fz(12), fontWeight: 600 }}>학년·반·번호 5자리</span></label>
-            <label className="col" style={{ gap: 6 }}><span className="label">이름</span>
-              <input id="nm" className="input" placeholder="이름" value={name} onChange={e => setName(e.target.value.trim())} /></label>
-          </div>
-          <label className="col" style={{ gap: 6 }}><span className="label">닉네임</span>
-            <input id="nk" className="input" placeholder="2~6자" maxLength={6} value={nick} onChange={e => setNick(e.target.value.trim())} />
-            <span style={{ fontSize: fz(12), fontWeight: 600, color: nickMsg ? (nickMsg.ok ? 'var(--s)' : nickMsg.ok === false ? 'var(--red)' : 'var(--t2)') : 'var(--t3)' }}>
-              {nickMsg ? (nickMsg.ok ? '✓ ' : '') + nickMsg.text : '2~6자 한글·영문·숫자 · 랭킹에는 닉네임만 보여요'}</span></label>
-          <label className="row" style={{ alignItems: 'flex-start', gap: 10, paddingTop: 2 }}>
-            <input id="ag" type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} style={{ margin: 0, flexShrink: 0 }} />
-            <span style={{ fontSize: fz(13), lineHeight: 1.5, color: 'var(--t15)' }}>러닝·문화시설 체크인에 <b style={{ color: 'var(--tx)' }}>위치 사용</b>, 랭킹에 <b style={{ color: 'var(--tx)' }}>닉네임·등급 공개</b>에 동의해요</span></label>
-        </div>
-      </section>
-      <div className="pad col" style={{ marginTop: 'auto', paddingTop: 20, gap: 10 }}>
-        <button className="btn" disabled={!valid || busy} onClick={submit}>{prev ? '정보 고쳐서 다시 요청' : '선생님께 인증 요청'}</button>
-        <span className="dim" style={{ fontSize: fz(12), lineHeight: 1.5, textAlign: 'center' }}>선생님이 학번과 이름을 확인하면 바로 시작할 수 있어요<br />한 번 인증되면 이 휴대폰에서는 계속 로그인돼요</span>
+      <div style={{ margin: '20px 16px 0', padding: 4, background: 'var(--sf3)', borderRadius: 18, boxShadow: 'inset 0 0 0 1px var(--line)', display: 'flex', gap: 4 }}>
+        <Tab k="login" label="로그인" /><Tab k="join" label="처음 참가" />
       </div>
-      {busy && <Busy text="요청 보내는 중" />}
+      <section className="pad" style={{ paddingTop: 12 }}>
+        {mode === 'login' ? (
+          <div className="card col" style={{ padding: 18, gap: 14 }}>
+            {!changeHb ? (
+              <div className="row" style={{ justifyContent: 'space-between' }}>
+                <div className="col" style={{ gap: 2 }}><span className="label">학번</span><span style={{ fontSize: fz(20), fontWeight: 800 }}>{hb}</span></div>
+                <button type="button" className="btn sm ghost" onClick={() => { setChangeHb(true); setHb(''); }}>다른 학번</button>
+              </div>
+            ) : (
+              <label className="col" style={{ gap: 6 }}><span className="label">학번</span>
+                <input id="lhb" className="input" inputMode="numeric" maxLength={5} placeholder="20312" value={hb} onChange={e => setHb(e.target.value.replace(/\D/g, ''))} />
+                <span className="dim" style={{ fontSize: fz(12), fontWeight: 600 }}>학년·반·번호 5자리</span></label>
+            )}
+            <label className="col" style={{ gap: 6 }}><span className="label">비밀번호</span>
+              <PwInput id="lpw" value={pw} onChange={setPw} onEnter={() => loginValid && !busy && doLogin()} /></label>
+            <button className="btn" disabled={!loginValid || busy} onClick={doLogin}>로그인</button>
+            <span className="dim" style={{ fontSize: fz(12), lineHeight: 1.5, textAlign: 'center' }}>비밀번호를 잊었으면 선생님께 재설정을 요청하세요<br />처음이라면 위의 "처음 참가"를 누르세요</span>
+          </div>
+        ) : (
+          <div className="card col" style={{ padding: 18, gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '130px minmax(0,1fr)', gap: 10 }}>
+              <label className="col" style={{ gap: 6 }}><span className="label">학번</span>
+                <input id="hb" className="input" inputMode="numeric" maxLength={5} placeholder="20312" value={hb} onChange={e => setHb(e.target.value.replace(/\D/g, ''))} />
+                <span className="dim" style={{ fontSize: fz(12), fontWeight: 600 }}>학년·반·번호 5자리</span></label>
+              <label className="col" style={{ gap: 6 }}><span className="label">이름</span>
+                <input id="nm" className="input" placeholder="이름" value={name} onChange={e => setName(e.target.value.trim())} /></label>
+            </div>
+            <label className="col" style={{ gap: 6 }}><span className="label">닉네임</span>
+              <input id="nk" className="input" placeholder="2~6자" maxLength={6} value={nick} onChange={e => setNick(e.target.value.trim())} />
+              <span style={{ fontSize: fz(12), fontWeight: 600, color: nickMsg ? (nickMsg.ok ? 'var(--s)' : nickMsg.ok === false ? 'var(--red)' : 'var(--t2)') : 'var(--t3)' }}>
+                {nickMsg ? (nickMsg.ok ? '✓ ' : '') + nickMsg.text : '2~6자 한글·영문·숫자 · 랭킹에는 닉네임만 보여요'}</span></label>
+            <label className="col" style={{ gap: 6 }}><span className="label">비밀번호</span>
+              <PwInput id="jpw" value={pw} onChange={setPw} placeholder="4자 이상" />
+              <span style={{ fontSize: fz(12), fontWeight: 600, color: pw && !pwOk ? 'var(--red)' : 'var(--t3)' }}>{pw && !pwOk ? '4~20자로 정해 주세요' : '다른 휴대폰에서 로그인할 때 써요 · 잊지 않게 기억해 두세요'}</span></label>
+            <label className="row" style={{ alignItems: 'flex-start', gap: 10, paddingTop: 2 }}>
+              <input id="ag" type="checkbox" checked={agree} onChange={e => setAgree(e.target.checked)} style={{ margin: 0, flexShrink: 0 }} />
+              <span style={{ fontSize: fz(13), lineHeight: 1.5, color: 'var(--t15)' }}>러닝·문화시설 체크인에 <b style={{ color: 'var(--tx)' }}>위치 사용</b>, 랭킹에 <b style={{ color: 'var(--tx)' }}>닉네임·등급 공개</b>에 동의해요</span></label>
+            <button className="btn" disabled={!joinValid || busy} onClick={doJoin}>{prev ? '정보 고쳐서 다시 요청' : '선생님께 인증 요청'}</button>
+            <span className="dim" style={{ fontSize: fz(12), lineHeight: 1.5, textAlign: 'center' }}>선생님이 학번과 이름을 확인하면 바로 시작할 수 있어요</span>
+          </div>
+        )}
+      </section>
+      {busy && <Busy text={mode === 'login' ? '로그인 중' : '요청 보내는 중'} />}
     </div>
   );
 }
@@ -1262,13 +1313,21 @@ function AdminPeople({ call }) {
   const [q, setQ] = useState('');
   const [edit, setEdit] = useState(null);
   async function saveNick(hb, nick) { try { await call('adminSetNick', { hakbun: hb, nick }); toast('닉네임을 바꿨어요'); setEdit(null); reload(); } catch (e) { toast(e.message); } }
-  async function logout(hb) { try { await call('adminLogoutStudent', { hakbun: hb }); toast('이 학생의 휴대폰을 로그아웃했어요. 다시 가입 신청하면 돼요.'); } catch (e) { toast(e.message); } }
+  async function logout(hb) { try { await call('adminLogoutStudent', { hakbun: hb }); toast('이 학생의 모든 휴대폰을 로그아웃했어요. 비밀번호로 다시 로그인하면 돼요.'); } catch (e) { toast(e.message); } }
+  const [pwFor, setPwFor] = useState(null);
+  const [newPw, setNewPw] = useState('');
+  async function resetPw() { try { await call('adminSetPassword', { hakbun: pwFor, password: newPw }); toast(pwFor + ' 비밀번호를 바꿨어요. 학생에게 알려주세요.'); setPwFor(null); setNewPw(''); } catch (e) { toast(e.message); } }
   if (st.loading) return <Spinner />;
   if (st.error) return <ErrorBox msg={st.error} onRetry={reload} />;
   const list = st.data.participants.filter(p => !q || (p.hakbun + p.name + p.nick).indexOf(q) >= 0).sort((a, b) => a.hakbun < b.hakbun ? -1 : 1);
   return (
     <div className="col" style={{ gap: 10 }}>
       <input className="input" style={{ height: 44 }} placeholder="검색 (학번·이름·닉네임)" value={q} onChange={e => setQ(e.target.value)} />
+      {pwFor && <div className="card row" style={{ padding: 14, gap: 10, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: fz(14), fontWeight: 700 }}>{pwFor} 새 비밀번호</span>
+        <input className="input" style={{ height: 40, width: 160, fontSize: fz(14) }} placeholder="4자 이상" value={newPw} onChange={e => setNewPw(e.target.value.replace(/\s/g, ''))} />
+        <button className="btn sm" disabled={newPw.length < 4} onClick={resetPw}>바꾸기</button><button className="btn sm ghost" onClick={() => setPwFor(null)}>취소</button>
+        <span className="dim" style={{ fontSize: fz(12), width: '100%' }}>바꾸면 이 학생의 모든 휴대폰이 로그아웃되고, 새 비밀번호로 다시 로그인해야 해요.</span></div>}
       <div className="card" style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: fz(14), minWidth: 620 }}>
           <thead><tr style={{ color: 'var(--t3)', fontSize: fz(12), textAlign: 'left' }}>{['학번', '이름', '닉네임', 'R 권', 'A P', 'S km', '종합', 'RAS', ''].map(h => <th key={h} style={{ padding: '12px 10px', borderBottom: '1px solid var(--line)' }}>{h}</th>)}</tr></thead>
@@ -1277,7 +1336,7 @@ function AdminPeople({ call }) {
             <td style={{ padding: 10 }}>{edit && edit.hb === p.hakbun ? <span className="row" style={{ gap: 4 }}><input className="input" style={{ height: 34, width: 100, fontSize: fz(13) }} value={edit.v} maxLength={6} onChange={e => setEdit({ hb: p.hakbun, v: e.target.value.trim() })} /><button className="btn sm" style={{ height: 34 }} onClick={() => saveNick(p.hakbun, edit.v)}>저장</button></span> : <button onClick={() => setEdit({ hb: p.hakbun, v: p.nick })} style={{ background: 'none', border: 0, color: 'var(--tx)', textDecoration: 'underline dotted', fontSize: fz(14) }}>{p.nick}</button>}</td>
             <td style={{ padding: 10, color: C.R }}>{fmtNum(p.R)}</td><td style={{ padding: 10, color: C.A }}>{fmtNum(p.A)}</td><td style={{ padding: 10, color: C.S }}>{fmtNum(p.S)}</td>
             <td style={{ padding: 10 }}>LV.{p.overall}</td><td style={{ padding: 10, fontWeight: 800 }}>{p.ras}</td>
-            <td style={{ padding: 10 }}><button className="btn sm ghost" style={{ height: 32, fontSize: fz(12) }} onClick={() => logout(p.hakbun)}>기기 로그아웃</button></td></tr>)}</tbody>
+            <td style={{ padding: 10 }}><span className="row" style={{ gap: 4 }}><button className="btn sm ghost" style={{ height: 32, fontSize: fz(12) }} onClick={() => { setPwFor(p.hakbun); setNewPw(''); }}>비밀번호 재설정</button><button className="btn sm ghost" style={{ height: 32, fontSize: fz(12) }} onClick={() => logout(p.hakbun)}>로그아웃</button></span></td></tr>)}</tbody>
         </table>
         {list.length === 0 && <div style={{ padding: 20, textAlign: 'center', color: 'var(--t2)' }}>참가자가 없어요.</div>}
       </div>
