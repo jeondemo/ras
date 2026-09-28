@@ -10,15 +10,24 @@
 <title>RAS 철인3종</title>
 <script>
 (function () {
-  function fit() {
-    var sw = screen.width, iw = window.innerWidth, z = 1;
-    if (sw && sw < 700 && iw > sw * 1.3) z = iw / sw;
-    var d = document.documentElement;
-    d.style.zoom = z === 1 ? '' : z.toFixed(3);
-    d.style.setProperty('--app-h', (window.innerHeight / z) + 'px');
+  var d = document.documentElement;
+  function measure() {
+    var s = document.createElement('span');
+    s.textContent = '가';
+    s.style.cssText = 'position:absolute;left:-9999px;top:0;font-size:calc(100px * var(--fz,1));line-height:1;display:inline-block;font-family:sans-serif;';
+    document.body.appendChild(s);
+    var h = s.getBoundingClientRect().height / 100;
+    document.body.removeChild(s);
+    return h > 0.2 && h < 5 ? h : 1;
   }
-  fit();
-  window.addEventListener('resize', fit);
+  function apply() {
+    var h = measure();
+    window.RAS_TEXT_SCALE = h;
+    d.style.setProperty('--fz', Math.abs(h - 1) > 0.02 ? (1 / h).toFixed(4) : '1');
+  }
+  if (document.body) apply(); else document.addEventListener('DOMContentLoaded', apply);
+  window.addEventListener('resize', apply);
+  window.addEventListener('pageshow', apply);
 })();
 </script>
 <link rel="manifest" href="manifest.json">
@@ -30,30 +39,30 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{-webkit-text-size-adjust:100%;-moz-text-size-adjust:100%;text-size-adjust:100%}
 html,body{margin:0;background:var(--bg);color:var(--tx);font-family:'Pretendard Variable',Pretendard,-apple-system,'Apple SD Gothic Neo',sans-serif;letter-spacing:-.2px;font-variant-numeric:tabular-nums}
-body{min-height:var(--app-h,100vh);overscroll-behavior-y:none}
+body{min-height:100vh;overscroll-behavior-y:none}
 button,input,textarea{font-family:inherit;color:inherit}
 button{cursor:pointer}
 button:disabled{cursor:default;opacity:.45}
 a{color:#9DBDFF}
-.app{max-width:480px;margin:0 auto;min-height:var(--app-h,100vh);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 96px)}
+.app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:calc(env(safe-area-inset-bottom,0px) + 96px)}
 .app.nonav{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 16px)}
 .pad{padding-left:16px;padding-right:16px}
 .card{background:var(--sf);border-radius:22px;box-shadow:inset 0 0 0 1px var(--line)}
 .row{display:flex;align-items:center}
 .col{display:flex;flex-direction:column}
 .muted{color:var(--t2)}.dim{color:var(--t3)}
-.h-title{font-size:20px;font-weight:800;letter-spacing:-.6px}
-.sec-title{font-size:17px;font-weight:700}
-.btn{height:56px;border-radius:18px;border:0;background:var(--tx);color:var(--bg);font-size:16px;font-weight:800;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.h-title{font-size:calc(20px * var(--fz,1));font-weight:800;letter-spacing:-.6px}
+.sec-title{font-size:calc(17px * var(--fz,1));font-weight:700}
+.btn{height:56px;border-radius:18px;border:0;background:var(--tx);color:var(--bg);font-size:calc(16px * var(--fz,1));font-weight:800;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
 .btn.ghost{background:transparent;color:var(--tx);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.18)}
 .btn.s{background:var(--s);box-shadow:0 10px 28px rgba(95,221,176,.28)}
-.btn.sm{height:40px;border-radius:12px;font-size:14px;width:auto;padding:0 16px}
+.btn.sm{height:40px;border-radius:12px;font-size:calc(14px * var(--fz,1));width:auto;padding:0 16px}
 .iconbtn{width:44px;height:44px;border-radius:999px;border:0;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--tx)}
-.chip{font-size:11px;font-weight:800;padding:3px 8px;border-radius:8px}
-.input{height:52px;border:0;border-radius:16px;background:var(--sf3);box-shadow:inset 0 0 0 1px var(--line);padding:0 16px;font-size:16px;font-weight:600;outline:none;width:100%}
+.chip{font-size:calc(11px * var(--fz,1));font-weight:800;padding:3px 8px;border-radius:8px}
+.input{height:52px;border:0;border-radius:16px;background:var(--sf3);box-shadow:inset 0 0 0 1px var(--line);padding:0 16px;font-size:calc(16px * var(--fz,1));font-weight:600;outline:none;width:100%}
 .input:focus,.ta:focus{box-shadow:inset 0 0 0 1.5px var(--r),0 0 0 4px rgba(122,167,255,.12)}
-.ta{width:100%;border:0;border-radius:16px;background:var(--sf3);box-shadow:inset 0 0 0 1px var(--line);padding:14px;font-size:15px;line-height:1.6;resize:none;outline:none}
-.label{font-size:13px;font-weight:700;color:var(--t15)}
+.ta{width:100%;border:0;border-radius:16px;background:var(--sf3);box-shadow:inset 0 0 0 1px var(--line);padding:14px;font-size:calc(15px * var(--fz,1));line-height:1.6;resize:none;outline:none}
+.label{font-size:calc(13px * var(--fz,1));font-weight:700;color:var(--t15)}
 .ras-badge{background-size:260% 260%;animation:rasFlow 5s ease-in-out infinite alternate}
 @keyframes rasFlow{0%{background-position:0% 0%}100%{background-position:100% 100%}}
 .ras-title{background-image:linear-gradient(100deg,#7AA7FF 0%,#A99BFF 22%,#FFB35C 48%,#5FDDB0 74%,#7AA7FF 100%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 14px rgba(122,167,255,.28));animation:rasTitle 6s ease-in-out infinite alternate}
@@ -67,18 +76,18 @@ a{color:#9DBDFF}
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.ras-badge,.ras-title,.ras-r,.ras-poly,.spin,.fade{animation:none}}
 .nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 16px);width:min(448px,calc(100% - 32px));height:64px;border-radius:22px;background:rgba(34,37,43,.94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 12px 32px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:space-around;padding:0 12px;z-index:20}
-.nav button{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:500;color:#7A8089;min-width:56px}
+.nav button{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:calc(11px * var(--fz,1));font-weight:500;color:#7A8089;min-width:56px}
 .nav button.on{color:var(--tx);font-weight:600}
 .nav .plus{width:48px;height:48px;min-width:48px;border-radius:999px;background:var(--tx);color:var(--bg);justify-content:center}
-.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 96px);transform:translateX(-50%);background:#2A2E35;color:var(--tx);padding:12px 18px;border-radius:14px;font-size:14px;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.5);z-index:50;max-width:calc(100% - 40px);text-align:center}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 96px);transform:translateX(-50%);background:#2A2E35;color:var(--tx);padding:12px 18px;border-radius:14px;font-size:calc(14px * var(--fz,1));font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.5);z-index:50;max-width:calc(100% - 40px);text-align:center}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:40}
 .skel{background:linear-gradient(90deg,#1D2026 0%,#262A31 50%,#1D2026 100%);background-size:200% 100%;animation:sk 1.2s infinite;border-radius:14px}
 @keyframes sk{0%{background-position:100% 0}100%{background-position:-100% 0}}
 .adm{max-width:1100px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 20px) 16px 40px}
 .tabbar{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
-.tabbar button{flex-shrink:0;height:38px;padding:0 14px;border-radius:99px;border:0;background:var(--sf);box-shadow:inset 0 0 0 1px var(--line);font-size:14px;font-weight:600;color:var(--tx)}
+.tabbar button{flex-shrink:0;height:38px;padding:0 14px;border-radius:99px;border:0;background:var(--sf);box-shadow:inset 0 0 0 1px var(--line);font-size:calc(14px * var(--fz,1));font-weight:600;color:var(--tx)}
 .tabbar button.on{background:var(--tx);color:var(--bg);font-weight:800}
-.pill{font-size:11px;font-weight:800;color:var(--bg);background:var(--red);padding:1px 7px;border-radius:99px;margin-left:6px}
+.pill{font-size:calc(11px * var(--fz,1));font-weight:800;color:var(--bg);background:var(--red);padding:1px 7px;border-radius:99px;margin-left:6px}
 input[type=checkbox]{width:20px;height:20px;accent-color:var(--r)}
 </style>
 </head>
