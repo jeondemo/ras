@@ -1,5 +1,5 @@
-const CACHE = 'ras-v2';
-const CORE = ['./', './index.html', './app.jsx', './manifest.json', './icon-192.png', './icon-512.png'];
+const CACHE = 'ras-v3';
+const CORE = ['./', './index.html', './app.jsx', './manifest.json', './icon-192.png', './icon-512.png', './goe-logo.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(CORE)).then(() => self.skipWaiting()));

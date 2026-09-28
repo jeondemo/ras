@@ -444,6 +444,13 @@ function HomeScreen({ go, refreshKey }) {
         {d.recent.length === 0 ? <div className="card" style={{ padding: 18, fontSize: fz(14), color: 'var(--t2)', textAlign: 'center' }}>아직 기록이 없어요. 아래 + 버튼으로 첫 기록을 남겨 보세요!</div> :
           <div className="card col">{d.recent.slice(0, 4).map((r, i) => <RecordRow key={r.id} r={r} first={!i} />)}</div>}
       </section>
+
+      <footer className="col" style={{ padding: '28px 16px 8px', alignItems: 'center', gap: 10 }}>
+        <div style={{ background: '#FFFFFF', borderRadius: 14, padding: '10px 18px' }}>
+          <img src="goe-logo.png" alt="경기도교육청 · 경기교육 대전환, 크게 제대로!" style={{ height: 36, display: 'block' }} />
+        </div>
+        <span className="dim" style={{ fontSize: fz(11), textAlign: 'center', lineHeight: 1.5 }}>경기도교육청 RAS(Reading · Arts · Sports) 교육 연계<br />과천여자고등학교 교무기획부</span>
+      </footer>
     </div>
   );
 }
