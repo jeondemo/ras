@@ -1,4 +1,4 @@
-const CACHE = 'ras-v3';
+const CACHE = 'ras-v4';
 const CORE = ['./', './index.html', './app.jsx', './manifest.json', './icon-192.png', './icon-512.png', './goe-logo.png'];
 
 self.addEventListener('install', (e) => {

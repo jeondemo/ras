@@ -55,7 +55,10 @@ function Icon({ name, size = 22, sw = 1.9, color = 'currentColor' }) {
     pin: <g><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z" /><circle cx="12" cy="9.5" r="2.5" /></g>,
     close: <path d="M6 6l12 12M18 6L6 18" />,
     spark: <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6" />,
-    list: <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+    list: <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />,
+    camera: <g><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z" /><circle cx="12" cy="13" r="3.5" /></g>,
+    image: <g><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="10" r="1.6" /><path d="M21 16l-5-5-8 8" /></g>,
+    trash: <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" />
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{P[name]}</svg>;
 }
@@ -529,7 +532,7 @@ function GradesScreen({ back, levels }) {
         <div className="card col" style={{ padding: '16px 18px', gap: 8, fontSize: fz(13), lineHeight: 1.7, color: 'var(--t15)' }}>
           <b style={{ color: 'var(--tx)', fontSize: fz(15) }}>인정 기준</b>
           <span><b style={{ color: C.R }}>R 독서</b> 추천도서 퀴즈 5문항 중 4개 이상 → 자동 인정 · 목록 밖 도서는 서술형 → 선생님 확인</span>
-          <span><b style={{ color: C.A }}>A 예술</b> 관람 1P (문화시설 20분 체류 자동 · 감상문 선생님 확인) · 체험·동아리·방과후 2P · 출연·출품 3P · 하루 최대 5P · 관람 누적 최대 8P</span>
+          <span><b style={{ color: C.A }}>A 예술</b> 관람 1P (문화시설 20분 체류 자동 · 사진+감상문은 선생님 확인) · 체크인+감상문 +1P · 교내 행사·활동 1P (선생님 인증) · 하루 최대 5P · 관람 누적 최대 8P</span>
           <span><b style={{ color: C.S }}>S 러닝</b> 앱 GPS로 측정한 러닝만 인정 · 1회 500m 이상 · 시속 20km 넘는 구간 제외 · 바로 반영</span>
           <span className="muted">RAS 지수 = 종목별 LV.5 대비 달성률(최대 100)을 합한 점수, 300점 만점</span>
         </div>
@@ -759,12 +762,70 @@ function QuizResultScreen({ result: r, home, replace }) {
   );
 }
 
+function shrinkPhoto(file, max = 1280) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const r = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * r); c.height = Math.round(img.height * r);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      const dataUrl = c.toDataURL('image/jpeg', 0.82);
+      resolve({ dataUrl, kb: Math.round(dataUrl.length * 0.75 / 1024), name: file.name });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('사진을 읽을 수 없어요. 다른 사진을 골라 주세요.')); };
+    img.src = url;
+  });
+}
+
+function PhotoPick({ photo, setPhoto }) {
+  const ref = useRef(null);
+  const [busy, setBusy] = useState(false);
+  async function pick(e) {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    setBusy(true);
+    try { setPhoto(await shrinkPhoto(f)); } catch (err) { toast(err.message); }
+    setBusy(false);
+  }
+  return (
+    <div className="col" style={{ gap: 8 }}>
+      <input ref={ref} type="file" accept="image/*" onChange={pick} style={{ display: 'none' }} />
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', padding: '2px 4px 0' }}>
+        <span style={{ fontSize: fz(15), fontWeight: 700 }}>다녀온 증거 사진 <span style={{ color: 'var(--red)' }}>*</span></span>
+        <span className="muted" style={{ fontSize: fz(12) }}>1장 · 얼굴은 안 나와도 돼요</span></div>
+      {photo ? (
+        <div className="card row" style={{ padding: 12, gap: 14 }}>
+          <img src={photo.dataUrl} alt="첨부한 사진" style={{ width: 92, height: 92, borderRadius: 14, objectFit: 'cover', flexShrink: 0, background: 'var(--sf3)' }} />
+          <div className="col" style={{ flexGrow: 1, gap: 4, minWidth: 0 }}>
+            <span className="row" style={{ gap: 6, fontSize: fz(14), fontWeight: 800 }}><Icon name="check" size={16} sw={2.8} color={C.S} />사진 1장 첨부됨</span>
+            <span className="muted" style={{ fontSize: fz(12), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{photo.name} · 1280px로 줄여서 {photo.kb >= 1024 ? (photo.kb / 1024).toFixed(1) + 'MB' : photo.kb + 'KB'}</span>
+            <div className="row" style={{ gap: 6, paddingTop: 4 }}>
+              <button type="button" className="btn sm" style={{ height: 32, background: 'var(--sf2)', color: 'var(--tx)', fontSize: fz(12) }} onClick={() => ref.current.click()}>다시 고르기</button>
+              <button type="button" aria-label="사진 삭제" onClick={() => setPhoto(null)} style={{ width: 32, height: 32, borderRadius: 10, border: 0, background: 'var(--sf2)', color: 'var(--t2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="trash" size={15} sw={2.2} /></button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <button type="button" onClick={() => ref.current.click()} disabled={busy} className="row" style={{ width: '100%', padding: '18px 16px', borderRadius: 18, border: '1.5px dashed rgba(255,179,92,.5)', background: 'rgba(255,179,92,.06)', color: 'var(--tx)', gap: 14, textAlign: 'left', opacity: 1 }}>
+          <span style={{ width: 52, height: 52, borderRadius: 16, background: TINT.A, color: C.A, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{busy ? <Spinner size={24} /> : <Icon name="camera" size={26} sw={2} />}</span>
+          <span className="col" style={{ gap: 3 }}><span style={{ fontSize: fz(15), fontWeight: 800 }}>사진 1장 찍기 · 고르기</span>
+            <span className="muted" style={{ fontSize: fz(12), lineHeight: 1.5 }}>입장권 · 안내판 · 팸플릿처럼 <b style={{ color: 'var(--t15)' }}>다녀온 걸 알 수 있는 것</b><br />자동으로 작게 줄여서 올려요</span></span>
+        </button>)}
+    </div>
+  );
+}
+
 function EssayForm({ kind, back, done, preset }) {
   const [title, setTitle] = useState(preset && preset.title || '');
   const [sub, setSub] = useState(preset && preset.sub || '');
   const [date, setDate] = useState(preset && preset.date || new Date().toISOString().slice(5, 10).replace('-', '. '));
   const [a1, setA1] = useState('');
   const [a2, setA2] = useState('');
+  const [photo, setPhoto] = useState(null);
   const [busy, setBusy] = useState(false);
   const draftKey = 'ras_draft_' + kind;
   useEffect(() => { const d = store.get(draftKey); if (d) try { const j = JSON.parse(d); setA1(j.a1 || ''); setA2(j.a2 || ''); if (!title) setTitle(j.title || ''); } catch (e) {} }, []);
@@ -772,10 +833,13 @@ function EssayForm({ kind, back, done, preset }) {
   const R = kind === 'R';
   const Q1 = R ? '책에서 가장 기억에 남는 장면 하나와 그 이유를 쓰세요.' : '가장 오래 본 작품(장면) 하나를 묘사하고, 왜 눈길이 갔는지 쓰세요.';
   const Q2 = R ? '작가의 생각에 동의하지 않는 부분이 있다면? 없다면 가장 공감한 부분은?' : '작가가 전하려던 것은 무엇이라고 생각하나요? 나의 생각은?';
-  const ok = title.trim() && a1.trim().length >= 100 && a2.trim().length >= 100;
+  const linked = !!(preset && preset.checkinId);
+  const needPhoto = !R && !linked;
+  const textOk = title.trim() && a1.trim().length >= 100 && a2.trim().length >= 100;
+  const ok = textOk && (!needPhoto || photo);
   async function submit() {
     setBusy(true);
-    try { await api('essaySubmit', { kind, title, sub, date, a1, a2, checkinId: preset && preset.checkinId }); store.set(draftKey, null); done(); }
+    try { await api('essaySubmit', { kind, title, sub, date, a1, a2, checkinId: preset && preset.checkinId, photo: needPhoto && photo ? photo.dataUrl : undefined }); store.set(draftKey, null); done(); }
     catch (e) { toast(e.message); }
     setBusy(false);
   }
@@ -783,8 +847,10 @@ function EssayForm({ kind, back, done, preset }) {
   const Counter = ({ v }) => <span style={{ fontSize: fz(12), color: v.trim().length >= 100 ? 'var(--s)' : 'var(--t2)', fontWeight: 600 }}>{v.trim().length} / 최소 100자</span>;
   return (
     <div className="app nonav fade">
-      <Header title={R ? '서술형 인증' : '관람 감상문'} onBack={back} eyebrow={R ? 'R 독서 · 목록 밖 도서 · 선생님 확인 후 반영' : 'A 예술 · 선생님 확인 후 반영'} />
+      <Header title={R ? '서술형 인증' : '관람 감상문'} onBack={back} eyebrow={R ? 'R 독서 · 목록 밖 도서 · 선생님 확인 후 반영' : linked ? 'A 예술 · 체크인 보너스 · 선생님 확인 후 +1P' : 'A 예술 · 보조 인증 · 선생님 확인 후 1P'} />
       <section className="pad col" style={{ paddingTop: 6, gap: 12 }}>
+        {needPhoto && <div className="row" style={{ gap: 10, padding: '12px 14px', borderRadius: 16, background: 'var(--sf3)', boxShadow: 'inset 0 0 0 1px var(--line)', alignItems: 'flex-start' }}><span style={{ flexShrink: 0, marginTop: 1 }}><Icon name="pin" size={18} sw={2} color={C.A} /></span><span style={{ fontSize: fz(13), lineHeight: 1.55, color: 'var(--t15)' }}><b style={{ color: 'var(--tx)' }}>체크인을 못 했을 때</b> 쓰는 인증이에요. 사진 1장과 감상문을 내면 선생님이 확인하고 1P를 넣어 줘요.</span></div>}
+        {needPhoto && <PhotoPick photo={photo} setPhoto={setPhoto} />}
         {preset && preset.checkinId && <div className="row" style={{ gap: 10, padding: '12px 14px', borderRadius: 16, background: 'rgba(95,221,176,.1)', boxShadow: 'inset 0 0 0 1px rgba(95,221,176,.3)' }}><Icon name="check" size={18} sw={2.6} color={C.S} /><span style={{ flexGrow: 1, fontSize: fz(13), color: 'var(--t15)' }}><b style={{ color: 'var(--tx)' }}>체크인 기록과 연결됨</b> · {preset.title}</span><span style={{ fontSize: fz(13), fontWeight: 800, color: C.A }}>+1P</span></div>}
         <div style={{ display: 'grid', gridTemplateColumns: R ? 'minmax(0,1fr) minmax(0,1fr)' : 'minmax(0,1fr) 100px', gap: 8 }}>
           <label className="col" style={{ gap: 6 }}><span className="label">{R ? '책 제목' : '전시·공연 이름'}</span><input id="et" className="input" value={title} onChange={e => setTitle(e.target.value)} /></label>
@@ -798,8 +864,8 @@ function EssayForm({ kind, back, done, preset }) {
           <textarea id="a2" className="ta" rows={5} value={a2} onChange={e => setA2(e.target.value)} placeholder="100자 이상 써 주세요" /><div className="row" style={{ justifyContent: 'flex-end' }}><Counter v={a2} /></div></label>
       </section>
       <div className="pad col" style={{ marginTop: 'auto', paddingTop: 16, gap: 10 }}>
-        <button className="btn" disabled={!ok || busy} onClick={submit}>제출하기</button>
-        <span className="dim" style={{ fontSize: fz(12), textAlign: 'center' }}>{R ? '선생님이 확인하면 독서 1권이 반영돼요' : '체크인 없는 관람도 제출할 수 있어요 · 선생님 확인 후 1P'}</span>
+        <button className="btn" disabled={!ok || busy} onClick={submit}>{needPhoto && !photo && textOk ? '사진을 붙이면 제출할 수 있어요' : '제출하기'}</button>
+        <span className="dim" style={{ fontSize: fz(12), textAlign: 'center' }}>{R ? '선생님이 확인하면 독서 1권이 반영돼요' : needPhoto ? '사진은 선생님만 볼 수 있고 시즌이 끝나면 지워져요' : '선생님이 확인하면 예술 +1P가 더해져요'}</span>
       </div>
       {busy && <Busy text="제출 중" />}
     </div>
@@ -849,9 +915,16 @@ function ArtTab({ go }) {
       {cur && <button onClick={() => go('artCheckin', { checkin: cur, minMinutes: 20 })} className="row" style={{ border: 0, borderRadius: 18, padding: '14px 16px', gap: 12, background: 'rgba(255,179,92,.12)', boxShadow: 'inset 0 0 0 1.5px rgba(255,179,92,.45)', color: 'var(--tx)', textAlign: 'left' }}>
         <span style={{ width: 10, height: 10, borderRadius: 99, background: C.A, boxShadow: '0 0 0 5px rgba(255,179,92,.2)' }} /><span style={{ flexGrow: 1, fontSize: fz(14), fontWeight: 700 }}>관람 중 · {cur.place}</span><span style={{ fontSize: fz(13), color: C.A, fontWeight: 700 }}>이어가기 →</span></button>}
       <span style={{ padding: '6px 4px 0', fontSize: fz(17), fontWeight: 700 }}>인증 방법</span>
-      <Method icon="pin" title="문화시설 체크인" sub="미술관·박물관·공연장에서 20분 이상 머물면" pts="+1P" chip="자동" chipC={C.S} chipBg={TINT.S} onClick={places ? null : find} />
-      <Method icon="spark" title="관람 감상문" sub="서술형 2문항 · 체크인한 관람이면 +1P 추가" pts="+1P" chip="선생님 확인" chipC="var(--t2)" chipBg="var(--sf2)" onClick={() => go('artEssay', {})} />
-      <Method icon="trophy" title="교내 행사 · 활동" sub="체험·동아리·방과후 2P · 출연·출품 3P" pts="+2~3P" chip="선생님 인증" chipC="var(--t2)" chipBg="var(--sf2)" />
+      <button onClick={places ? undefined : find} className="col" style={{ border: 0, borderRadius: 22, padding: 16, gap: 0, background: 'linear-gradient(135deg, rgba(255,179,92,.18) 0%, rgba(255,106,92,.10) 100%)', boxShadow: 'inset 0 0 0 1.5px rgba(255,179,92,.45)', color: 'var(--tx)', textAlign: 'left', alignItems: 'stretch' }}>
+        <div className="row" style={{ gap: 14 }}>
+          <span className="ras-badge" style={{ width: 52, height: 52, borderRadius: 16, backgroundImage: GRAD.A, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.45), 0 8px 22px rgba(255,154,60,.32)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icon name="pin" size={26} sw={2.2} /></span>
+          <div className="col" style={{ flexGrow: 1, gap: 3, minWidth: 0 }}><div className="row" style={{ gap: 6 }}><span style={{ fontSize: fz(16), fontWeight: 800 }}>문화시설 체크인</span><span className="chip" style={{ color: C.S, background: TINT.S }}>자동</span></div><span style={{ fontSize: fz(12), lineHeight: 1.45, color: 'var(--t15)' }}>미술관·박물관·공연장에서 20분 이상 머물면 바로 1P</span></div>
+          <span style={{ fontSize: fz(20), fontWeight: 800, color: C.A, whiteSpace: 'nowrap' }}>+1P</span></div>
+        <div className="row" style={{ justifyContent: 'space-between', marginTop: 12, paddingTop: 10, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.1)', fontSize: fz(12), color: 'var(--t2)' }}><span>감상문까지 쓰면 <b style={{ color: C.A }}>+1P</b> 더</span><span style={{ fontWeight: 700, color: 'var(--tx)' }}>{places ? '아래에서 골라 체크인' : '근처 문화시설 찾기 →'}</span></div>
+      </button>
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', padding: '6px 4px 0' }}><span style={{ fontSize: fz(15), fontWeight: 700 }}>체크인이 어려웠나요?</span><span className="muted" style={{ fontSize: fz(12) }}>선생님 확인 후 반영</span></div>
+      <Method icon="camera" title="사진 + 감상문" sub="입장권·안내판 사진 1장과 감상문 2문항" pts="+1P" chip="보조 인증" chipC={C.A} chipBg={TINT.A} onClick={() => go('artEssay', {})} />
+      <Method icon="trophy" title="교내 행사 · 활동" sub="체험·동아리·방과후·출연·출품 · 선생님이 직접 넣어 줘요" pts="+1P" chip="선생님 인증" chipC="var(--t2)" chipBg="var(--sf2)" />
       <div className="row" style={{ justifyContent: 'space-between', padding: '8px 4px 0' }}><span style={{ fontSize: fz(15), fontWeight: 700 }}>지금 근처 문화시설</span><span className="muted" style={{ fontSize: fz(12) }}>반경 {places ? places.radius : 200}m 자동 탐색</span></div>
       {!places ? <button className="btn ghost" onClick={find} disabled={finding}>{finding ? <><Spinner size={20} /> 위치 확인 중</> : <><Icon name="pin" size={18} /> 근처 문화시설 찾기</>}</button> :
         places.list.length === 0 ? <div className="card col" style={{ padding: 18, gap: 10, alignItems: 'center', textAlign: 'center' }}><span className="muted" style={{ fontSize: fz(14) }}>근처 {places.radius}m 안에 미술관·박물관·공연장이 없어요.</span><button className="btn sm ghost" onClick={find}>다시 찾기</button></div> :
@@ -1274,6 +1347,21 @@ function AdminJoin({ call, onChange }) {
   );
 }
 
+function AdminPhoto({ call, id }) {
+  const [src, setSrc] = useState(null);
+  const [err, setErr] = useState(null);
+  const [big, setBig] = useState(false);
+  useEffect(() => { call('adminPhoto', { id }).then(r => setSrc(r.dataUrl)).catch(e => setErr(e.message)); }, [id]);
+  if (err) return <span style={{ fontSize: fz(12), color: 'var(--red)' }}>{err}</span>;
+  if (!src) return <div className="skel" style={{ width: 120, height: 120 }} />;
+  return (
+    <div>
+      <img src={src} alt="학생이 첨부한 사진" onClick={() => setBig(true)} style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 14, cursor: 'zoom-in', background: 'var(--sf3)' }} />
+      {big && <div className="overlay" onClick={() => setBig(false)} style={{ background: 'rgba(0,0,0,.85)', cursor: 'zoom-out' }}><img src={src} alt="" style={{ maxWidth: '96vw', maxHeight: '92vh', borderRadius: 12 }} /></div>}
+    </div>
+  );
+}
+
 function AdminQueue({ call, onChange }) {
   const [st, reload] = useAsync(() => call('adminQueue'), []);
   const [open, setOpen] = useState({});
@@ -1295,16 +1383,17 @@ function AdminQueue({ call, onChange }) {
             <Badge e={r.event} size={32} />
             <div className="col" style={{ flexGrow: 1, minWidth: 180, gap: 2 }}>
               <span style={{ fontSize: fz(15), fontWeight: 800 }}>{r.hakbun} {r.name} · {r.type}</span>
-              <span style={{ fontSize: fz(13), color: 'var(--t15)' }}>{r.text}</span>
+              <span className="row" style={{ fontSize: fz(13), color: 'var(--t15)', gap: 6 }}>{r.text}{r.detail && r.detail.photoId && <span className="chip" style={{ color: C.A, background: TINT.A }}>사진</span>}{r.event === 'A' && r.detail && r.detail.checkinId && <span className="chip" style={{ color: C.S, background: TINT.S }}>체크인 보너스</span>}</span>
               <span className="dim" style={{ fontSize: fz(12) }}>{r.time.slice(5, 16)} · {r.memo}</span>
             </div>
             <div className="row" style={{ gap: 6 }}>
-              <button className="btn sm ghost" onClick={() => setOpen(o => ({ ...o, [r.id]: !o[r.id] }))}>{open[r.id] ? '접기' : '답 보기'}</button>
+              <button className="btn sm ghost" onClick={() => setOpen(o => ({ ...o, [r.id]: !o[r.id] }))}>{open[r.id] ? '접기' : (r.detail && r.detail.photoId ? '사진·답 보기' : '답 보기')}</button>
               <button className="btn sm ghost" disabled={busy} onClick={() => decide(r.id, '반려')}>반려</button>
               <button className="btn sm" disabled={busy} onClick={() => decide(r.id, '인정')}>인정</button>
             </div>
           </div>
           {open[r.id] && r.detail && <div className="col" style={{ gap: 8, padding: 12, borderRadius: 14, background: 'var(--sf3)', fontSize: fz(14), lineHeight: 1.65 }}>
+            {r.detail.photoId && <AdminPhoto call={call} id={r.detail.photoId} />}
             {r.detail.sub && <span className="muted">{r.event === 'R' ? '저자' : '장소'}: {r.detail.sub} {r.detail.date ? '· ' + r.detail.date : ''}{r.detail.checkinId ? ' · 체크인 연결됨' : ''}</span>}
             <span><b style={{ color: C[r.event] }}>Q1</b> {r.detail.a1}</span><span><b style={{ color: C[r.event] }}>Q2</b> {r.detail.a2}</span></div>}
         </div>))}
@@ -1334,7 +1423,7 @@ function AdminAward({ call, onChange }) {
     <div className="col" style={{ gap: 12 }}>
       <div className="card col" style={{ padding: 16, gap: 12 }}>
         <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
-          {[['체험', '체험 · 동아리 · 방과후 2P'], ['출연', '출연 · 출품 3P']].map(([k, n]) => <button key={k} onClick={() => setKind(k)} className="btn sm" style={{ background: kind === k ? C.A : 'var(--sf2)', color: kind === k ? 'var(--bg)' : 'var(--tx)' }}>{n}</button>)}
+          {[['체험', '체험 · 동아리 · 방과후'], ['출연', '출연 · 출품']].map(([k, n]) => <button key={k} onClick={() => setKind(k)} className="btn sm" style={{ background: kind === k ? C.A : 'var(--sf2)', color: kind === k ? 'var(--bg)' : 'var(--tx)' }}>{n}</button>)}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 160px', gap: 8 }}>
           <input className="input" placeholder="행사·활동 이름 (예: 합창 발표회)" value={title} onChange={e => setTitle(e.target.value)} />
@@ -1345,8 +1434,8 @@ function AdminAward({ call, onChange }) {
         <div style={{ maxHeight: 280, overflow: 'auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(170px,1fr))', gap: 6 }}>
           {shown.map(p => <label key={p.hakbun} className="row" style={{ gap: 8, padding: '8px 10px', borderRadius: 12, background: sel[p.hakbun] ? TINT.A : 'var(--sf3)', fontSize: fz(14) }}><input type="checkbox" checked={!!sel[p.hakbun]} onChange={e => setSel(s => ({ ...s, [p.hakbun]: e.target.checked }))} />{p.hakbun} {p.name}</label>)}
         </div>
-        <button className="btn" disabled={!title.trim() || !hakbuns.length || busy} onClick={submit}>{hakbuns.length}명에게 {kind === '출연' ? 3 : 2}P 인증하기</button>
-        <span className="dim" style={{ fontSize: fz(12) }}>하루 최대 5P를 넘는 부분은 자동으로 빠져요.</span>
+        <button className="btn" disabled={!title.trim() || !hakbuns.length || busy} onClick={submit}>{hakbuns.length}명에게 1P 인증하기</button>
+        <span className="dim" style={{ fontSize: fz(12) }}>교내 행사·활동은 종류와 상관없이 1P예요 · 하루 최대 5P를 넘는 부분은 자동으로 빠져요.</span>
       </div>
       {result && <div className="card col" style={{ padding: 14, gap: 6 }}><b>처리 결과</b>{result.map(r => <span key={r.hakbun} style={{ fontSize: fz(13), color: r.ok ? 'var(--t15)' : 'var(--red)' }}>{r.hakbun} · {r.ok ? '+' + r.points + 'P' : ''} {r.note || ''}</span>)}</div>}
     </div>
