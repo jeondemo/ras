@@ -175,6 +175,29 @@ function fmtPace(sec, km) {
   return m + "'" + String(r).padStart(2, '0') + '"';
 }
 function fmtNum(v) { return Number.isInteger(v) ? String(v) : (Math.round(v * 100) / 100).toString(); }
+function seasonState() {
+  let se = null; try { se = JSON.parse(store.get('ras_season') || 'null'); } catch (e) {}
+  if (!se || !se.start) return { ok: true };
+  const d = new Date(); const today = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  const md = s => s.slice(5).replace('-', '.');
+  if (today < se.start) { const dd = Math.ceil((new Date(se.start) - new Date(today)) / 86400000); return { ok: false, before: true, start: md(se.start), end: md(se.end), dday: dd }; }
+  if (today > se.end) return { ok: false, after: true, start: md(se.start), end: md(se.end) };
+  return { ok: true, start: md(se.start), end: md(se.end) };
+}
+function DistBig({ km, size = 124, unitSize = 30, color = 'var(--s)' }) {
+  const m = Math.round(km * 1000);
+  const big = m < 1000 ? String(m) : (m / 1000).toFixed(2);
+  const unit = m < 1000 ? 'M' : 'KM';
+  return (
+    <div className="col" style={{ alignItems: 'center', gap: 6 }}>
+      <div className="row" style={{ alignItems: 'baseline', gap: 10 }}>
+        <span style={{ fontSize: fz(size), fontWeight: 800, letterSpacing: -6, lineHeight: .95, fontVariantNumeric: 'tabular-nums' }}>{big}</span>
+        <span style={{ fontSize: fz(unitSize), fontWeight: 800, letterSpacing: 1, color }}>{unit}</span>
+      </div>
+      <span style={{ fontSize: fz(20), fontWeight: 700, color: 'var(--t15)', fontVariantNumeric: 'tabular-nums' }}>{m < 1000 ? (m / 1000).toFixed(2) + ' km' : m.toLocaleString() + ' m'}</span>
+    </div>
+  );
+}
 
 /* ---------------------------------------------------------------- Join */
 function PwInput({ id, value, onChange, placeholder, onEnter }) {
@@ -203,7 +226,8 @@ function JoinScreen({ onDone, prev, rejected }) {
   useEffect(() => {
     clearTimeout(timer.current);
     if (mode !== 'join' || !nick) { setNickMsg(null); return; }
-    const local = nick.length < 2 || nick.length > 6 ? '2~6자로 써 주세요' : (!/^[가-힣A-Za-z0-9]+$/.test(nick) ? '한글·영문·숫자만 쓸 수 있어요' : '');
+    const cost = nick.split('').reduce((c, ch) => c + (/[가-힣]/.test(ch) ? 1 : 0.7), 0);
+    const local = !/^[가-힣A-Za-z0-9]+$/.test(nick) ? '한글·영문·숫자만 쓸 수 있어요' : nick.length < 2 ? '2자 이상 써 주세요' : cost > 7.001 ? '너무 길어요 · 한글 7자, 영문·숫자 10자까지' : '';
     if (local) { setNickMsg({ ok: false, text: local }); return; }
     setNickMsg({ ok: null, text: '확인 중…' });
     timer.current = setTimeout(() => {
@@ -269,9 +293,9 @@ function JoinScreen({ onDone, prev, rejected }) {
                 <input id="nm" className="input" placeholder="이름" value={name} onChange={e => setName(e.target.value.trim())} /></label>
             </div>
             <label className="col" style={{ gap: 6 }}><span className="label">닉네임</span>
-              <input id="nk" className="input" placeholder="2~6자" maxLength={6} value={nick} onChange={e => setNick(e.target.value.trim())} />
+              <input id="nk" className="input" placeholder="한글 2~7자 · 영문 10자" maxLength={10} value={nick} onChange={e => setNick(e.target.value.trim())} />
               <span style={{ fontSize: fz(12), fontWeight: 600, color: nickMsg ? (nickMsg.ok ? 'var(--s)' : nickMsg.ok === false ? 'var(--red)' : 'var(--t2)') : 'var(--t3)' }}>
-                {nickMsg ? (nickMsg.ok ? '✓ ' : '') + nickMsg.text : '2~6자 한글·영문·숫자 · 랭킹에는 닉네임만 보여요'}</span></label>
+                {nickMsg ? (nickMsg.ok ? '✓ ' : '') + nickMsg.text : '한글 7자 · 영문·숫자 10자까지 · 랭킹에는 닉네임만 보여요'}</span></label>
             <label className="col" style={{ gap: 6 }}><span className="label">비밀번호</span>
               <PwInput id="jpw" value={pw} onChange={setPw} placeholder="4자 이상" />
               <span style={{ fontSize: fz(12), fontWeight: 600, color: pw && !pwOk ? 'var(--red)' : 'var(--t3)' }}>{pw && !pwOk ? '4~20자로 정해 주세요' : '다른 휴대폰에서 로그인할 때 써요 · 잊지 않게 기억해 두세요'}</span></label>
@@ -345,6 +369,7 @@ function HomeScreen({ go, refreshKey }) {
   if (st.error) return <ErrorBox msg={st.error} onRetry={reload} />;
   const d = st.data;
   DDAY = d.season.dday;
+  store.set('ras_season', JSON.stringify(d.season));
   const t = d.totals, L = d.levels;
   const best = ['R', 'A', 'S'].reduce((m, e) => (t.pct[e] > t.pct[m] ? e : m), 'R');
   const weak = ['R', 'A', 'S'].reduce((m, e) => (t.pct[e] < t.pct[m] ? e : m), 'S');
@@ -505,7 +530,7 @@ function GradesScreen({ back, levels }) {
           <b style={{ color: 'var(--tx)', fontSize: fz(15) }}>인정 기준</b>
           <span><b style={{ color: C.R }}>R 독서</b> 추천도서 퀴즈 5문항 중 4개 이상 → 자동 인정 · 목록 밖 도서는 서술형 → 선생님 확인</span>
           <span><b style={{ color: C.A }}>A 예술</b> 관람 1P (문화시설 20분 체류 자동 · 감상문 선생님 확인) · 체험·동아리·방과후 2P · 출연·출품 3P · 하루 최대 5P · 관람 누적 최대 8P</span>
-          <span><b style={{ color: C.S }}>S 러닝</b> 앱 GPS로 측정한 러닝만 인정 · 시속 20km 넘는 구간 제외 · 바로 반영</span>
+          <span><b style={{ color: C.S }}>S 러닝</b> 앱 GPS로 측정한 러닝만 인정 · 1회 500m 이상 · 시속 20km 넘는 구간 제외 · 바로 반영</span>
           <span className="muted">RAS 지수 = 종목별 LV.5 대비 달성률(최대 100)을 합한 점수, 300점 만점</span>
         </div>
       </div>
@@ -909,9 +934,13 @@ function RunTab({ go }) {
     return () => navigator.geolocation.clearWatch(id);
   }, []);
   const good = gps && gps.acc && gps.acc <= 30;
-  const checks = [['경로는 저장하지 않아요.', ' 거리와 시간만 남아요.'], ['', '시속 20km가 넘는 구간(자전거·차량)은 자동으로 빠져요.'], ['', '사진·직접 입력 없이 모두 같은 방식으로 측정해요.'], ['바로 등급에 반영', '돼요. 선생님 승인이 필요 없어요.']];
+  const se = seasonState();
+  const checks = [['경로는 저장하지 않아요.', ' 거리와 시간만 남아요.'], ['', '시속 20km가 넘는 구간(자전거·차량)은 자동으로 빠져요.'], ['500m 이상', ' 뛰어야 기록으로 남아요. 짧으면 기록 없이 끝낼 수 있어요.'], ['바로 등급에 반영', '돼요. 선생님 승인이 필요 없어요.']];
   return (
     <div className="col fade" style={{ flexGrow: 1 }}>
+      {!se.ok && <div className="row" style={{ margin: '14px 16px 0', padding: '14px 16px', borderRadius: 18, background: 'rgba(122,167,255,.10)', boxShadow: 'inset 0 0 0 1.5px rgba(122,167,255,.4)', gap: 12 }}>
+        <span style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(122,167,255,.16)', color: 'var(--r)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: fz(12), fontWeight: 900 }}>{se.before ? 'D-' + se.dday : '종료'}</span>
+        <div className="col" style={{ gap: 2 }}><span style={{ fontSize: fz(15), fontWeight: 800 }}>{se.before ? '시즌은 ' + se.start.replace('.', '월 ') + '일에 시작해요' : '시즌이 끝났어요'}</span><span style={{ fontSize: fz(12), color: 'var(--t15)' }}>{se.before ? '그 전에 뛴 러닝은 기록에 남지 않아요 · 미리 연습만 해 두세요' : '이번 시즌 기록은 마감됐어요'}</span></div></div>}
       <section className="pad col" style={{ paddingTop: 16, gap: 12 }}>
         <div className="card col" style={{ padding: 20, gap: 18 }}>
           <div className="row" style={{ gap: 14 }}><Badge e="S" size={56} /><div className="col" style={{ gap: 2 }}><span style={{ fontSize: fz(20), fontWeight: 800 }}>GPS 러닝</span><span className="muted" style={{ fontSize: fz(13) }}>어디서 뛰어도 거리·시간 자동 기록</span></div></div>
@@ -924,8 +953,9 @@ function RunTab({ go }) {
         </div>
       </section>
       <div className="pad col" style={{ marginTop: 'auto', paddingTop: 16, gap: 10 }}>
-        <button className="btn s" style={{ height: 60, fontSize: fz(18) }} onClick={() => go('run')}><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z" /></svg>러닝 시작</button>
-        <span className="dim" style={{ fontSize: fz(12), textAlign: 'center' }}>스포츠는 앱으로 측정한 러닝 거리만 인정돼요</span>
+        {se.ok ? <button className="btn s" style={{ height: 60, fontSize: fz(18) }} onClick={() => go('run')}><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z" /></svg>러닝 시작</button>
+          : <span className="btn" style={{ height: 60, fontSize: fz(18), background: 'var(--sf2)', color: 'var(--t3)' }}>{se.before ? '러닝 시작 · ' + se.start + '부터' : '시즌 종료'}</span>}
+        <span className="dim" style={{ fontSize: fz(12), textAlign: 'center' }}>{se.start ? '시즌 기간: ' + se.start + ' – ' + se.end + ' · ' : ''}앱으로 측정한 러닝 거리만 인정돼요</span>
       </div>
     </div>
   );
@@ -949,6 +979,7 @@ function RunScreen({ back, replace }) {
   const [now, setNow] = useState(Date.now());
   const [busy, setBusy] = useState(false);
   const [holding, setHolding] = useState(0);
+  const [shortPanel, setShortPanel] = useState(false);
   const runRef = useRef(run); runRef.current = run;
   const wake = useRef(null);
   useEffect(() => {
@@ -975,13 +1006,13 @@ function RunScreen({ back, replace }) {
     setRun(r => r.paused ? { ...r, paused: false, pausedTotal: r.pausedTotal + (Date.now() - r.pausedAt), pausedAt: null } : { ...r, paused: true, pausedAt: Date.now() });
   }
   const holdT = useRef(null);
-  const confirmShort = useRef(false);
   function holdStart() { setHolding(1); const s = Date.now(); holdT.current = setInterval(() => { const p = (Date.now() - s) / 1000; setHolding(1 + p); if (p >= 1) { clearInterval(holdT.current); setHolding(0); finish(); } }, 50); }
   function holdEnd() { clearInterval(holdT.current); setHolding(0); }
+  function discard() { store.set('ras_run', null); back(); }
   async function finish() {
     const r = runRef.current;
     const mm = liveMeasure(r.points);
-    if (mm.km < 0.5 && !confirmShort.current) { confirmShort.current = true; toast('0.5km보다 짧으면 저장되지 않아요. 계속 뛰거나, 한 번 더 길게 눌러 끝내세요.'); return; }
+    if (mm.km < 0.5) { if (!r.paused) togglePause(); setShortPanel(true); return; }
     setBusy(true);
     try {
       const res = await api('runSubmit', { points: r.points, startedAt: String(r.startedAt) });
@@ -989,7 +1020,7 @@ function RunScreen({ back, replace }) {
       replace('runDone', { res, startedAt: r.startedAt });
     } catch (e) {
       toast(e.message);
-      if (/짧아서/.test(e.message)) { store.set('ras_run', null); back(); }
+      if (e.server) { store.set('ras_run', null); back(); }
     }
     setBusy(false);
   }
@@ -1000,16 +1031,22 @@ function RunScreen({ back, replace }) {
         <div className="row" style={{ gap: 8 }}><span style={{ width: 10, height: 10, borderRadius: 99, background: run.paused ? 'var(--a)' : 'var(--red)', boxShadow: `0 0 0 5px ${run.paused ? 'rgba(255,179,92,.2)' : 'rgba(255,107,90,.2)'}` }} /><span style={{ fontSize: fz(14), fontWeight: 800 }}>{run.paused ? '일시정지' : '측정 중'}</span></div>
         <span className="row" style={{ height: 30, padding: '0 12px', borderRadius: 999, background: 'var(--sf)', boxShadow: 'inset 0 0 0 1px var(--line)', gap: 6, fontSize: fz(12), fontWeight: 600, color: 'var(--t15)' }}><span style={{ width: 6, height: 6, borderRadius: 99, background: acc && acc <= 30 ? C.S : 'var(--a)' }} />GPS {acc ? '±' + acc + 'm' : '찾는 중'} · 화면 켜짐</span>
       </div>
-      <div className="col" style={{ paddingTop: 56, alignItems: 'center', gap: 6 }}>
+      <div className="col" style={{ paddingTop: 48, alignItems: 'center', gap: 12 }}>
         <Badge e="S" size={36} />
-        <span style={{ marginTop: 8, fontSize: fz(124), fontWeight: 800, letterSpacing: -6, lineHeight: .95 }}>{toS.toFixed(2)}</span>
-        <span style={{ fontSize: fz(14), fontWeight: 800, letterSpacing: 4, color: 'var(--t2)' }}>KILOMETERS</span>
+        <DistBig km={toS} />
       </div>
       <div style={{ paddingTop: 36, display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 10 }}>
         <div className="card col" style={{ padding: '14px 16px', gap: 2 }}><span className="muted" style={{ fontSize: fz(12) }}>시간</span><span style={{ fontSize: fz(32), fontWeight: 800, letterSpacing: -1 }}>{fmtClock(elapsed)}</span></div>
         <div className="card col" style={{ padding: '14px 16px', gap: 2 }}><span className="muted" style={{ fontSize: fz(12) }}>평균 페이스</span><span style={{ fontSize: fz(32), fontWeight: 800, letterSpacing: -1 }}>{fmtPace(elapsed, toS)}</span></div>
       </div>
-      <span className="dim" style={{ fontSize: fz(12), textAlign: 'center', marginTop: 14 }}>{m.ex > 0.01 ? '제외된 구간 ' + m.ex.toFixed(2) + 'km · ' : ''}경로는 저장되지 않아요</span>
+      <span className="dim" style={{ fontSize: fz(12), textAlign: 'center', marginTop: 14 }}>{m.ex > 0.01 ? '제외된 구간 ' + Math.round(m.ex * 1000) + 'm · ' : ''}500m 이상 뛰면 기록돼요 · 경로는 저장되지 않아요</span>
+      {shortPanel && <div className="col" style={{ margin: '16px 0 0', padding: 16, borderRadius: 20, background: 'rgba(255,179,92,.10)', boxShadow: 'inset 0 0 0 1.5px rgba(255,179,92,.45)', gap: 12 }}>
+        <div className="row" style={{ gap: 10, alignItems: 'flex-start' }}><span style={{ flexShrink: 0, marginTop: 2, color: 'var(--a)' }}><Icon name="warn" size={18} sw={2.2} /></span>
+          <span style={{ fontSize: fz(14), lineHeight: 1.5 }}><b>500m 미만은 기록으로 남지 않아요.</b><br /><span style={{ color: 'var(--t15)' }}>지금까지 {Math.round(toS * 1000)}m · {Math.max(0, 500 - Math.round(toS * 1000))}m 더 뛰면 기록돼요</span></span></div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 8 }}>
+          <button className="btn" style={{ height: 48, borderRadius: 14, fontSize: fz(15) }} onClick={() => { setShortPanel(false); if (runRef.current.paused) togglePause(); }}>계속 뛰기</button>
+          <button className="btn ghost" style={{ height: 48, borderRadius: 14, fontSize: fz(15) }} onClick={discard}>기록 없이 종료</button>
+        </div></div>}
       <div className="row" style={{ marginTop: 'auto', gap: 12, justifyContent: 'center', paddingTop: 30 }}>
         <button aria-label={run.paused ? '다시 시작' : '일시정지'} onClick={togglePause} style={{ width: 76, height: 76, borderRadius: 999, border: 0, background: 'var(--sf)', boxShadow: 'inset 0 0 0 1px var(--line)', color: 'var(--tx)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {run.paused ? <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z" /></svg> : <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>}</button>
@@ -1017,6 +1054,7 @@ function RunScreen({ back, replace }) {
           <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: holding ? Math.min(100, (holding - 1) * 100) + '%' : 0, background: 'rgba(255,107,90,.35)' }} />
           <span style={{ position: 'relative', fontSize: fz(18), fontWeight: 800 }}>종료</span><span style={{ position: 'relative', fontSize: fz(11), fontWeight: 600, color: '#5F656E' }}>길게 눌러서 종료</span></button>
       </div>
+      <button onClick={discard} style={{ marginTop: 14, alignSelf: 'center', background: 'none', border: 0, fontSize: fz(13), fontWeight: 600, color: 'var(--t2)', textDecoration: 'underline', textUnderlineOffset: 3 }}>기록하지 않고 나가기</button>
       {busy && <Busy text="기록 저장 중" />}
     </div>
   );
@@ -1035,7 +1073,7 @@ function RunDoneScreen({ res, startedAt, home }) {
       </div>
       <div className="pad col" style={{ paddingTop: 22, gap: 10 }}>
         <div className="card" style={{ padding: '18px 12px', display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', textAlign: 'center' }}>
-          <div className="col" style={{ gap: 2 }}><span className="muted" style={{ fontSize: fz(12) }}>거리</span><span style={{ fontSize: fz(28), fontWeight: 800, color: C.S }}>{res.km.toFixed(2)}<span style={{ fontSize: fz(13) }}>km</span></span></div>
+          <div className="col" style={{ gap: 2 }}><span className="muted" style={{ fontSize: fz(12) }}>거리</span><span style={{ fontSize: fz(28), fontWeight: 800, color: C.S }}>{res.km < 1 ? Math.round(res.km * 1000) : res.km.toFixed(2)}<span style={{ fontSize: fz(13) }}>{res.km < 1 ? 'm' : 'km'}</span></span></div>
           <div className="col" style={{ gap: 2, boxShadow: '-1px 0 0 var(--line)' }}><span className="muted" style={{ fontSize: fz(12) }}>시간</span><span style={{ fontSize: fz(28), fontWeight: 800 }}>{fmtClock(res.seconds)}</span></div>
           <div className="col" style={{ gap: 2, boxShadow: '-1px 0 0 var(--line)' }}><span className="muted" style={{ fontSize: fz(12) }}>페이스</span><span style={{ fontSize: fz(28), fontWeight: 800 }}>{fmtPace(res.seconds, res.km)}</span></div>
         </div>
@@ -1046,7 +1084,7 @@ function RunDoneScreen({ res, startedAt, home }) {
           <Segs value={t.S} th={L.S} color={C.S} h={6} />
           {t.lv.S < 5 && <span className="muted" style={{ fontSize: fz(12) }}>LV.{t.lv.S + 1} {L.names[t.lv.S]}까지 {fmtNum(Math.round((L.S[t.lv.S] - t.S) * 100) / 100)}km 남았어요</span>}
         </div>
-        {res.excludedKm > 0.01 && <span className="dim" style={{ padding: '0 6px', fontSize: fz(12) }}>빠른 이동·신호 끊김 구간 {res.excludedKm.toFixed(2)}km는 제외됐어요</span>}
+        {res.excludedKm > 0.01 && <span className="dim" style={{ padding: '0 6px', fontSize: fz(12) }}>빠른 이동·신호 끊김 구간 {Math.round(res.excludedKm * 1000)}m는 제외됐어요</span>}
       </div>
       <div className="pad" style={{ marginTop: 'auto', paddingTop: 20 }}><button className="btn" onClick={home}>홈으로</button></div>
     </div>
@@ -1082,7 +1120,7 @@ function StudentApp() {
   const check = useCallback(() => {
     if (!store.get('ras_token')) { setPhase({ s: 'join' }); return; }
     api('session').then(r => {
-      if (r.status === '승인') setPhase({ s: 'main', profile: r.profile });
+      if (r.status === '승인') { if (r.season) store.set('ras_season', JSON.stringify(r.season)); setPhase({ s: 'main', profile: r.profile }); }
       else if (r.status === '대기') setPhase({ s: 'wait', req: r.request });
       else if (r.status === '반려') setPhase({ s: 'join', rejected: true, prev: r.request });
       else { store.set('ras_token', null); setPhase({ s: 'join' }); }
@@ -1226,7 +1264,7 @@ function AdminJoin({ call, onChange }) {
             {q.warning && <span style={{ fontSize: fz(12), fontWeight: 700, color: q.warning.indexOf('같은 학번') >= 0 ? 'var(--red)' : 'var(--a)' }}>{q.warning}</span>}
           </div>
           <label className="col" style={{ gap: 4 }}><span className="dim" style={{ fontSize: fz(11) }}>닉네임 (고칠 수 있어요)</span>
-            <input className="input" style={{ height: 40, width: 130, fontSize: fz(14) }} maxLength={6} value={nicks[q.id] !== undefined ? nicks[q.id] : q.nick} onChange={e => setNicks(n => ({ ...n, [q.id]: e.target.value.trim() }))} /></label>
+            <input className="input" style={{ height: 40, width: 130, fontSize: fz(14) }} maxLength={10} value={nicks[q.id] !== undefined ? nicks[q.id] : q.nick} onChange={e => setNicks(n => ({ ...n, [q.id]: e.target.value.trim() }))} /></label>
           <div className="row" style={{ gap: 6 }}>
             <button className="btn sm ghost" disabled={busy} onClick={() => decide([q.id], '반려')}>반려</button>
             <button className="btn sm" disabled={busy} onClick={() => decide([q.id], '승인', nicks[q.id] !== undefined ? nicks[q.id] : q.nick)}>승인</button>
@@ -1340,7 +1378,7 @@ function AdminPeople({ call }) {
           <thead><tr style={{ color: 'var(--t3)', fontSize: fz(12), textAlign: 'left' }}>{['학번', '이름', '닉네임', 'R 권', 'A P', 'S km', '종합', 'RAS', ''].map(h => <th key={h} style={{ padding: '12px 10px', borderBottom: '1px solid var(--line)' }}>{h}</th>)}</tr></thead>
           <tbody>{list.map(p => <tr key={p.hakbun} style={{ borderBottom: '1px solid var(--line)' }}>
             <td style={{ padding: 10, fontWeight: 700 }}>{p.hakbun}</td><td style={{ padding: 10 }}>{p.name}</td>
-            <td style={{ padding: 10 }}>{edit && edit.hb === p.hakbun ? <span className="row" style={{ gap: 4 }}><input className="input" style={{ height: 34, width: 100, fontSize: fz(13) }} value={edit.v} maxLength={6} onChange={e => setEdit({ hb: p.hakbun, v: e.target.value.trim() })} /><button className="btn sm" style={{ height: 34 }} onClick={() => saveNick(p.hakbun, edit.v)}>저장</button></span> : <button onClick={() => setEdit({ hb: p.hakbun, v: p.nick })} style={{ background: 'none', border: 0, color: 'var(--tx)', textDecoration: 'underline dotted', fontSize: fz(14) }}>{p.nick}</button>}</td>
+            <td style={{ padding: 10 }}>{edit && edit.hb === p.hakbun ? <span className="row" style={{ gap: 4 }}><input className="input" style={{ height: 34, width: 110, fontSize: fz(13) }} value={edit.v} maxLength={10} onChange={e => setEdit({ hb: p.hakbun, v: e.target.value.trim() })} /><button className="btn sm" style={{ height: 34 }} onClick={() => saveNick(p.hakbun, edit.v)}>저장</button></span> : <button onClick={() => setEdit({ hb: p.hakbun, v: p.nick })} style={{ background: 'none', border: 0, color: 'var(--tx)', textDecoration: 'underline dotted', fontSize: fz(14) }}>{p.nick}</button>}</td>
             <td style={{ padding: 10, color: C.R }}>{fmtNum(p.R)}</td><td style={{ padding: 10, color: C.A }}>{fmtNum(p.A)}</td><td style={{ padding: 10, color: C.S }}>{fmtNum(p.S)}</td>
             <td style={{ padding: 10 }}>LV.{p.overall}</td><td style={{ padding: 10, fontWeight: 800 }}>{p.ras}</td>
             <td style={{ padding: 10 }}><span className="row" style={{ gap: 4 }}><button className="btn sm ghost" style={{ height: 32, fontSize: fz(12) }} onClick={() => { setPwFor(p.hakbun); setNewPw(''); }}>비밀번호 재설정</button><button className="btn sm ghost" style={{ height: 32, fontSize: fz(12) }} onClick={() => logout(p.hakbun)}>로그아웃</button></span></td></tr>)}</tbody>
