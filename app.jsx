@@ -903,6 +903,14 @@ function ArtTab({ go }) {
     catch (e) { toast(e.message); }
     setBusy(false);
   }
+  const Big = ({ icon, title, sub, chip, chipC, chipBg, foot, onClick }) => (
+    <button onClick={onClick} className="col" style={{ border: 0, borderRadius: 20, padding: 14, gap: 0, background: 'linear-gradient(135deg, rgba(255,179,92,.16) 0%, rgba(255,106,92,.08) 100%)', boxShadow: 'inset 0 0 0 1.5px rgba(255,179,92,.42)', color: 'var(--tx)', textAlign: 'left', alignItems: 'stretch', minWidth: 0 }}>
+      <span className="ras-badge" style={{ width: 46, height: 46, borderRadius: 14, backgroundImage: GRAD.A, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.45), 0 8px 20px rgba(255,154,60,.32)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={icon} size={24} sw={2.2} /></span>
+      <div className="row" style={{ gap: 6, marginTop: 12, flexWrap: 'wrap' }}><span style={{ fontSize: fz(15), fontWeight: 800, letterSpacing: -0.3 }}>{title}</span><span className="chip" style={{ color: chipC, background: chipBg, fontSize: fz(10) }}>{chip}</span></div>
+      <span style={{ fontSize: fz(12), lineHeight: 1.45, color: 'var(--t15)', marginTop: 4, minHeight: 35 }}>{sub}</span>
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', marginTop: 10, paddingTop: 8, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.1)' }}><span style={{ fontSize: fz(18), fontWeight: 800, color: C.A }}>+1P</span><span style={{ fontSize: fz(12), fontWeight: 700 }}>{foot}</span></div>
+    </button>
+  );
   const Method = ({ icon, title, sub, pts, chip, chipC, chipBg, onClick }) => (
     <button onClick={onClick} disabled={!onClick} className="card row" style={{ border: 0, padding: '14px 16px', gap: 14, color: 'var(--tx)', textAlign: 'left', opacity: 1 }}>
       <span style={{ width: 44, height: 44, borderRadius: 14, background: TINT.A, color: C.A, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icon name={icon} /></span>
@@ -915,16 +923,12 @@ function ArtTab({ go }) {
       {cur && <button onClick={() => go('artCheckin', { checkin: cur, minMinutes: 20 })} className="row" style={{ border: 0, borderRadius: 18, padding: '14px 16px', gap: 12, background: 'rgba(255,179,92,.12)', boxShadow: 'inset 0 0 0 1.5px rgba(255,179,92,.45)', color: 'var(--tx)', textAlign: 'left' }}>
         <span style={{ width: 10, height: 10, borderRadius: 99, background: C.A, boxShadow: '0 0 0 5px rgba(255,179,92,.2)' }} /><span style={{ flexGrow: 1, fontSize: fz(14), fontWeight: 700 }}>관람 중 · {cur.place}</span><span style={{ fontSize: fz(13), color: C.A, fontWeight: 700 }}>이어가기 →</span></button>}
       <span style={{ padding: '6px 4px 0', fontSize: fz(17), fontWeight: 700 }}>인증 방법</span>
-      <button onClick={places ? undefined : find} className="col" style={{ border: 0, borderRadius: 22, padding: 16, gap: 0, background: 'linear-gradient(135deg, rgba(255,179,92,.18) 0%, rgba(255,106,92,.10) 100%)', boxShadow: 'inset 0 0 0 1.5px rgba(255,179,92,.45)', color: 'var(--tx)', textAlign: 'left', alignItems: 'stretch' }}>
-        <div className="row" style={{ gap: 14 }}>
-          <span className="ras-badge" style={{ width: 52, height: 52, borderRadius: 16, backgroundImage: GRAD.A, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.45), 0 8px 22px rgba(255,154,60,.32)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icon name="pin" size={26} sw={2.2} /></span>
-          <div className="col" style={{ flexGrow: 1, gap: 3, minWidth: 0 }}><div className="row" style={{ gap: 6 }}><span style={{ fontSize: fz(16), fontWeight: 800 }}>문화시설 체크인</span><span className="chip" style={{ color: C.S, background: TINT.S }}>자동</span></div><span style={{ fontSize: fz(12), lineHeight: 1.45, color: 'var(--t15)' }}>미술관·박물관·공연장에서 20분 이상 머물면 바로 1P</span></div>
-          <span style={{ fontSize: fz(20), fontWeight: 800, color: C.A, whiteSpace: 'nowrap' }}>+1P</span></div>
-        <div className="row" style={{ justifyContent: 'space-between', marginTop: 12, paddingTop: 10, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.1)', fontSize: fz(12), color: 'var(--t2)' }}><span>감상문까지 쓰면 <b style={{ color: C.A }}>+1P</b> 더</span><span style={{ fontWeight: 700, color: 'var(--tx)' }}>{places ? '아래에서 골라 체크인' : '근처 문화시설 찾기 →'}</span></div>
-      </button>
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', padding: '6px 4px 0' }}><span style={{ fontSize: fz(15), fontWeight: 700 }}>체크인이 어려웠나요?</span><span className="muted" style={{ fontSize: fz(12) }}>선생님 확인 후 반영</span></div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))', gap: 10 }}>
+        <Big icon="pin" title="문화시설 체크인" chip="자동" chipC={C.S} chipBg={TINT.S} sub="미술관·박물관·공연장에서 20분 이상 머물면 바로" foot={places ? '아래에서 골라요' : '근처 찾기 →'} onClick={places ? undefined : find} />
+        <Big icon="trophy" title="교내 행사 · 활동" chip="선생님 인증" chipC="var(--t2)" chipBg="var(--sf2)" sub="체험·동아리·방과후·출연·출품 참여를 신청하면" foot="신청하기 →" onClick={() => go('artEvent', {})} />
+      </div>
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', padding: '6px 4px 0' }}><span style={{ fontSize: fz(15), fontWeight: 700 }}>체크인이 어려웠나요?</span><span className="muted" style={{ fontSize: fz(12) }}>사진 1장 + 감상문 · 선생님 확인</span></div>
       <Method icon="camera" title="사진 + 감상문" sub="입장권·안내판 사진 1장과 감상문 2문항" pts="+1P" chip="보조 인증" chipC={C.A} chipBg={TINT.A} onClick={() => go('artEssay', {})} />
-      <Method icon="trophy" title="교내 행사 · 활동" sub="체험·동아리·방과후·출연·출품 · 선생님이 직접 넣어 줘요" pts="+1P" chip="선생님 인증" chipC="var(--t2)" chipBg="var(--sf2)" />
       <div className="row" style={{ justifyContent: 'space-between', padding: '8px 4px 0' }}><span style={{ fontSize: fz(15), fontWeight: 700 }}>지금 근처 문화시설</span><span className="muted" style={{ fontSize: fz(12) }}>반경 {places ? places.radius : 200}m 자동 탐색</span></div>
       {!places ? <button className="btn ghost" onClick={find} disabled={finding}>{finding ? <><Spinner size={20} /> 위치 확인 중</> : <><Icon name="pin" size={18} /> 근처 문화시설 찾기</>}</button> :
         places.list.length === 0 ? <div className="card col" style={{ padding: 18, gap: 10, alignItems: 'center', textAlign: 'center' }}><span className="muted" style={{ fontSize: fz(14) }}>근처 {places.radius}m 안에 미술관·박물관·공연장이 없어요.</span><button className="btn sm ghost" onClick={find}>다시 찾기</button></div> :
@@ -936,6 +940,50 @@ function ArtTab({ go }) {
       <span className="dim" style={{ fontSize: fz(12), textAlign: 'center', padding: '8px 0' }}>하루 최대 5P · 관람 인정은 최대 8P까지</span>
       {busy && <Busy text="체크인 중" />}
     </section>
+  );
+}
+
+const EVENT_KINDS = ['체험 프로그램', '예술 동아리', '방과후 학교', '공연 출연', '작품 출품'];
+function ArtEventScreen({ back, replace }) {
+  const [kind, setKind] = useState('체험 프로그램');
+  const [title, setTitle] = useState('');
+  const [date, setDate] = useState(new Date(Date.now() + 9 * 3600e3).toISOString().slice(0, 10));
+  const [memo, setMemo] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [mine, reload] = useAsync(() => api('eventMine'), []);
+  const ok = title.trim().length >= 2 && date;
+  async function submit() {
+    setBusy(true);
+    try { await api('eventRequest', { kind, title, date, memo }); replace('submitted', { kind: 'A' }); }
+    catch (e) { toast(e.message); }
+    setBusy(false);
+  }
+  const list = mine.data ? mine.data.records : [];
+  return (
+    <div className="app nonav fade">
+      <Header title="교내 행사 · 활동" onBack={back} eyebrow="A 예술 · 선생님 확인 후 1P" />
+      <section className="pad col" style={{ paddingTop: 6, gap: 12 }}>
+        <div className="row" style={{ gap: 10, padding: '12px 14px', borderRadius: 16, background: 'var(--sf3)', boxShadow: 'inset 0 0 0 1px var(--line)', alignItems: 'flex-start' }}><span style={{ flexShrink: 0, marginTop: 1 }}><Icon name="trophy" size={18} sw={2} color={C.A} /></span><span style={{ fontSize: fz(13), lineHeight: 1.55, color: 'var(--t15)' }}>학교에서 한 예술 활동을 신청하면 <b style={{ color: 'var(--tx)' }}>담당 선생님이 확인하고 1P</b>를 넣어 줘요. 선생님이 행사 뒤에 한꺼번에 넣어 주기도 해요.</span></div>
+        <span style={{ padding: '4px 4px 0', fontSize: fz(15), fontWeight: 700 }}>어떤 활동인가요?</span>
+        <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>{EVENT_KINDS.map(k => <button key={k} onClick={() => setKind(k)} className="btn sm" style={{ height: 38, borderRadius: 99, background: kind === k ? C.A : 'var(--sf2)', color: kind === k ? 'var(--bg)' : 'var(--tx)', fontSize: fz(13), fontWeight: kind === k ? 800 : 600 }}>{k}</button>)}</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 130px', gap: 8 }}>
+          <label className="col" style={{ gap: 6 }}><span className="label">행사·활동 이름</span><input id="evt" className="input" placeholder="예: 도예 체험 수업" value={title} onChange={e => setTitle(e.target.value)} /></label>
+          <label className="col" style={{ gap: 6 }}><span className="label">참여일</span><input id="evd" className="input" type="date" value={date} onChange={e => setDate(e.target.value)} style={{ padding: '0 10px' }} /></label>
+        </div>
+        <label className="col" style={{ gap: 6 }}><span className="label">한 줄 메모 <span className="dim">(선택)</span></span><input id="evm" className="input" placeholder="예: 김OO 선생님 지도, 물레 성형" value={memo} onChange={e => setMemo(e.target.value)} /></label>
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', padding: '10px 4px 0' }}><span style={{ fontSize: fz(15), fontWeight: 700 }}>내 교내 활동</span><span className="muted" style={{ fontSize: fz(12) }}>이번 시즌 {list.length}건</span></div>
+        {mine.loading ? <div className="skel" style={{ height: 48 }} /> : list.length === 0 ? <div className="card" style={{ padding: 16, textAlign: 'center', color: 'var(--t3)', fontSize: fz(13) }}>아직 신청하거나 인정된 활동이 없어요</div> :
+          <div className="card col">{list.map((r, i) => <div key={r.id} className="row" style={{ minHeight: 48, padding: '6px 14px', gap: 10, borderTop: i ? '1px solid var(--line)' : 0 }}>
+            <span className="dim" style={{ fontSize: fz(12), width: 40, flexShrink: 0 }}>{r.time.slice(5, 10).replace('-', '.')}</span>
+            <span style={{ flexGrow: 1, fontSize: fz(14), fontWeight: 600, minWidth: 0 }}>{r.text}</span>
+            <span style={{ fontSize: fz(12), fontWeight: 700, color: r.status === '인정' ? C.S : r.status === '반려' ? 'var(--red)' : C.A, whiteSpace: 'nowrap' }}>{r.status === '인정' ? '인정 · +' + r.value + 'P' : r.status === '반려' ? '반려' : '확인 중'}</span></div>)}</div>}
+      </section>
+      <div className="pad col" style={{ marginTop: 'auto', paddingTop: 16, gap: 10 }}>
+        <button className="btn" disabled={!ok || busy} onClick={submit}>선생님께 확인 요청</button>
+        <span className="dim" style={{ fontSize: fz(12), textAlign: 'center' }}>활동 종류와 상관없이 1P · 하루 최대 5P</span>
+      </div>
+      {busy && <Busy text="요청 보내는 중" />}
+    </div>
   );
 }
 
@@ -1035,12 +1083,15 @@ function RunTab({ go }) {
 }
 
 function liveMeasure(points) {
-  let km = 0, ex = 0;
+  let km = 0, ex = 0, anchor = points[0];
   for (let i = 1; i < points.length; i++) {
-    const a = points[i - 1], b = points[i];
-    const d = haversine(a[1], a[2], b[1], b[2]) / 1000, h = (b[0] - a[0]) / 3600000;
-    if (h <= 0) continue;
-    if (d / h > 20 || b[0] - a[0] > 120000) ex += d; else km += d;
+    const b = points[i];
+    const dm = haversine(anchor[1], anchor[2], b[1], b[2]);
+    if (dm < Math.max(6, 0.6 * Math.max(anchor[3] || 0, b[3] || 0))) continue;
+    const d = dm / 1000, h = (b[0] - anchor[0]) / 3600000;
+    if (h <= 0) { anchor = b; continue; }
+    if (d / h > 20 || b[0] - anchor[0] > 120000) ex += d; else km += d;
+    anchor = b;
   }
   return { km, ex };
 }
@@ -1229,6 +1280,7 @@ function StudentApp() {
       case 'quizResult': return <QuizResultScreen {...common} result={p.result} />;
       case 'bookEssay': return <EssayForm kind="R" back={back} done={() => replace('submitted', { kind: 'R' })} />;
       case 'artEssay': return <EssayForm kind="A" back={back} preset={p.preset} done={() => replace('submitted', { kind: 'A' })} />;
+      case 'artEvent': return <ArtEventScreen back={back} replace={replace} />;
       case 'submitted': return <SubmittedScreen home={home} kind={p.kind} />;
       case 'artCheckin': return <ArtCheckinScreen {...common} checkin={p.checkin} minMinutes={p.minMinutes} />;
       case 'run': return <RunScreen {...common} />;
@@ -1387,15 +1439,16 @@ function AdminQueue({ call, onChange }) {
               <span className="dim" style={{ fontSize: fz(12) }}>{r.time.slice(5, 16)} · {r.memo}</span>
             </div>
             <div className="row" style={{ gap: 6 }}>
-              <button className="btn sm ghost" onClick={() => setOpen(o => ({ ...o, [r.id]: !o[r.id] }))}>{open[r.id] ? '접기' : (r.detail && r.detail.photoId ? '사진·답 보기' : '답 보기')}</button>
+              <button className="btn sm ghost" onClick={() => setOpen(o => ({ ...o, [r.id]: !o[r.id] }))}>{open[r.id] ? '접기' : (r.detail && r.detail.photoId ? '사진·답 보기' : r.type === '교내활동' ? '내용 보기' : '답 보기')}</button>
               <button className="btn sm ghost" disabled={busy} onClick={() => decide(r.id, '반려')}>반려</button>
               <button className="btn sm" disabled={busy} onClick={() => decide(r.id, '인정')}>인정</button>
             </div>
           </div>
           {open[r.id] && r.detail && <div className="col" style={{ gap: 8, padding: 12, borderRadius: 14, background: 'var(--sf3)', fontSize: fz(14), lineHeight: 1.65 }}>
             {r.detail.photoId && <AdminPhoto call={call} id={r.detail.photoId} />}
+            {r.type === '교내활동' && <span className="muted">학생 신청 · {r.detail.kind} · 참여일 {r.detail.date}{r.detail.memo ? ' · ' + r.detail.memo : ''}</span>}
             {r.detail.sub && <span className="muted">{r.event === 'R' ? '저자' : '장소'}: {r.detail.sub} {r.detail.date ? '· ' + r.detail.date : ''}{r.detail.checkinId ? ' · 체크인 연결됨' : ''}</span>}
-            <span><b style={{ color: C[r.event] }}>Q1</b> {r.detail.a1}</span><span><b style={{ color: C[r.event] }}>Q2</b> {r.detail.a2}</span></div>}
+            {r.detail.a1 && <span><b style={{ color: C[r.event] }}>Q1</b> {r.detail.a1}</span>}{r.detail.a2 && <span><b style={{ color: C[r.event] }}>Q2</b> {r.detail.a2}</span>}</div>}
         </div>))}
     </div>
   );
