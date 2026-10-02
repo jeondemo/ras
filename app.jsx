@@ -368,6 +368,19 @@ function Triangle({ pct, animate = true, size = 150 }) {
   );
 }
 
+function LevelTrack({ value, conv = 0, th, color, h = 6 }) {
+  const top = th[4];
+  const meas = Math.max(0, Math.min(100, (value - conv) / top * 100));
+  const cv = Math.max(0, Math.min(100 - meas, conv / top * 100));
+  return (
+    <div style={{ position: 'relative', height: h, borderRadius: h, background: 'var(--track)', overflow: 'hidden' }}>
+      <span style={{ position: 'absolute', left: 0, top: 0, height: h, width: meas + '%', background: color }} />
+      {cv > 0 && <span style={{ position: 'absolute', left: meas + '%', top: 0, height: h, width: cv + '%', background: `repeating-linear-gradient(135deg, ${color} 0px, ${color} 4px, rgba(95,221,176,.35) 4px, rgba(95,221,176,.35) 8px)` }} />}
+      {th.slice(0, 4).map((v, i) => <span key={i} style={{ position: 'absolute', left: `calc(${v / top * 100}% - 1px)`, top: 0, width: 2, height: h, background: 'var(--sf)' }} />)}
+    </div>
+  );
+}
+
 function HomeScreen({ go, refreshKey }) {
   const [st, reload] = useAsync(() => api('home'), [refreshKey]);
   if (st.loading && !st.data) return <div className="col" style={{ padding: 16, gap: 12 }}><div className="skel" style={{ height: 80 }} /><div className="skel" style={{ height: 250 }} /><div className="skel" style={{ height: 220 }} /></div>;
@@ -425,24 +438,28 @@ function HomeScreen({ go, refreshKey }) {
           <span className="sec-title">종목별 기록</span>
           <button onClick={() => go('grades', { levels: L, sport: d.sport })} style={{ background: 'none', border: 0, fontSize: fz(13), fontWeight: 500, color: 'var(--t2)' }}>등급표</button>
         </div>
-        <div className="card col">
-          {['R', 'A', 'S'].map((e, i) => (
-            <button key={e} onClick={() => go('record', { tab: e })} className="row" style={{ border: 0, height: 66, padding: '0 16px', gap: 12, borderTop: i ? '1px solid rgba(255,255,255,.05)' : 0, background: 'none', color: 'inherit', textAlign: 'left' }}>
-              <Badge e={e} lv={t.lv[e]} />
-              <div className="col" style={{ flexGrow: 1, gap: 8, minWidth: 0 }}>
-                <div className="row" style={{ alignItems: 'baseline', gap: 6 }}>
-                  <span style={{ fontSize: fz(15), fontWeight: 700 }}>{NAME[e]}</span>
-                  <span style={{ fontSize: fz(10), fontWeight: 700, letterSpacing: 1.2, color: 'var(--t3)' }}>{EN[e]}</span>
-                  <span style={{ fontSize: fz(12), fontWeight: 600, color: C[e] }}>{t.lv[e] ? 'LV.' + t.lv[e] + ' ' + L.names[t.lv[e] - 1] : '시작 전'}</span>
+        <div className="card col" style={{ overflow: 'hidden' }}>
+          {['R', 'A', 'S'].map((e, i) => {
+            const lv = t.lv[e], unit = L.unit[e];
+            const left = lv < 5 ? fmtNum(Math.round((L[e][lv] - t[e]) * 100) / 100) : null;
+            return (
+              <button key={e} onClick={() => go('record', { tab: e })} className="col" style={{ border: 0, padding: '15px 16px 16px', gap: 12, borderTop: i ? '1px solid rgba(255,255,255,.06)' : 0, background: 'none', color: 'inherit', textAlign: 'left', alignItems: 'stretch' }}>
+                <div className="row" style={{ gap: 12 }}>
+                  <span style={{ width: 36, height: 36, borderRadius: 11, background: TINT[e], color: C[e], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: fz(17), fontWeight: 800, flexShrink: 0 }}>{e}</span>
+                  <div className="col" style={{ flexGrow: 1, gap: 2, minWidth: 0 }}>
+                    <span style={{ fontSize: fz(15), fontWeight: 700 }}>{NAME[e]}</span>
+                    <span className="row" style={{ columnGap: 8, rowGap: 1, flexWrap: 'wrap', fontSize: fz(12), minWidth: 0 }}>
+                      <span style={{ color: C[e], fontWeight: 700, whiteSpace: 'nowrap' }}>{lv ? 'LV.' + lv + ' ' + L.names[lv - 1] : '시작 전'}</span>
+                      <span className="muted" style={{ whiteSpace: 'nowrap' }}>{left === null ? '철인 기준 달성' : L.names[lv] + '까지 ' + left + unit}</span>
+                    </span>
+                  </div>
+                  <span style={{ fontSize: fz(24), fontWeight: 800, letterSpacing: -.6, whiteSpace: 'nowrap' }}>{fmtNum(t[e])}<span className="muted" style={{ fontSize: fz(13), fontWeight: 600, letterSpacing: 0, paddingLeft: 2 }}>{unit}</span></span>
+                  <Icon name="chev" size={14} sw={2.4} color="#5F656E" />
                 </div>
-                <Segs value={t[e]} th={L[e]} color={C[e]} />
-              </div>
-              <div className="col" style={{ width: 76, alignItems: 'flex-end', gap: 1 }}>
-                <span style={{ fontSize: fz(20), fontWeight: 800, letterSpacing: -.5 }}>{fmtNum(t[e])}<span className="muted" style={{ fontSize: fz(13), fontWeight: 500 }}>{L.unit[e]}</span></span>
-                <span className="dim" style={{ fontSize: fz(11) }}>철인 {fmtNum(L[e][4])}{L.unit[e]}</span>
-              </div>
-            </button>
-          ))}
+                <LevelTrack value={t[e]} conv={e === 'S' ? t.conv || 0 : 0} th={L[e]} color={C[e]} />
+              </button>
+            );
+          })}
         </div>
       </section>
 
