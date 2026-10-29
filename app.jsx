@@ -2,8 +2,19 @@ const { useState, useEffect, useRef, useCallback, useMemo } = React;
 const fz = (n) => `calc(${n}px * var(--fz, 1))`;
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbyJAJwr3ILkVxnV3lUqmLzUss2S68DwEQU8J05dzXxCpSWACuby3qF3Jb3vrIDRrPKL/exec';
-const C = { R: '#7AA7FF', A: '#FFB35C', S: '#5FDDB0' };
-const TINT = { R: 'rgba(122,167,255,.14)', A: 'rgba(255,179,92,.14)', S: 'rgba(95,221,176,.14)' };
+const THEMES = {
+  blue: { name: '밝은 블루', C: { R: '#2F6BFF', A: '#F08A1F', S: '#10B585' }, rgb: { R: '47,107,255', A: '240,138,31', S: '16,181,133' }, ln: '15,42,74', sf: '#FFFFFF', tx: '#0F2A4A', t15: '#3A5272', t3: '#8197B3', sep: '#A5B6CB', empty: '#D9E5F3', avatar: '#E3ECF7', warnTx: '#A55A00', errTx: '#C2412F', weak: '#E5483A', quizNext: '#9FC2FF', pod: '#EEF4FC', podFade: 'rgba(238,244,252,.2)', fadeTo: 'rgba(255,255,255,1)', fadeTo0: 'rgba(255,255,255,0)', medal2: '#9AA8BA', photoChip: 'rgba(255,255,255,.88)',
+    prev: { bg: 'radial-gradient(130% 50% at 50% 0%, #3E9FF7 0%, rgba(62,159,247,0) 72%), linear-gradient(180deg, #74BBFB 0%, #94CBFD 45%, #B4DAFF 100%)', card: '#FFFFFF', cardSh: '0 4px 10px rgba(10,60,140,.18)', sub: '#D6E2F0', pill: 'linear-gradient(180deg,#2E8BFF 0%,#1667E8 100%)', pillTx: '#FFFFFF' } },
+  navy: { name: '짙은 청색', C: { R: '#7AA7FF', A: '#FFB35C', S: '#5FDDB0' }, rgb: { R: '122,167,255', A: '255,179,92', S: '95,221,176' }, ln: '255,255,255', sf: '#183D85', tx: '#F4F5F6', t15: '#D3DEF0', t3: '#7891BC', sep: '#5A74A3', empty: '#234C97', avatar: '#1F4791', warnTx: '#FFD29E', errTx: '#FFB4AA', weak: '#FF8A7A', quizNext: '#B9D0FF', pod: '#1D4592', podFade: 'rgba(29,69,146,.2)', fadeTo: 'rgba(24,61,133,1)', fadeTo0: 'rgba(24,61,133,0)', medal2: '#C9CFD8', photoChip: 'rgba(7,27,74,.7)',
+    prev: { bg: 'radial-gradient(120% 55% at 50% 0%, #0F3378 0%, rgba(15,51,120,0) 70%), linear-gradient(180deg, #071B4A 0%, #08204F 60%, #0A2558 100%)', card: 'linear-gradient(180deg,#21499A 0%,#183D85 100%)', cardSh: 'inset 0 1px 0 rgba(255,255,255,.14), inset 0 0 0 1px rgba(150,185,255,.2)', sub: 'rgba(255,255,255,.18)', pill: '#F4F5F6', pillTx: '#0A2560' } },
+  dark: { name: '블랙', C: { R: '#7AA7FF', A: '#FFB35C', S: '#5FDDB0' }, rgb: { R: '122,167,255', A: '255,179,92', S: '95,221,176' }, ln: '255,255,255', sf: '#1D2026', tx: '#F4F5F6', t15: '#C9CDD3', t3: '#5F656E', sep: '#4A4F57', empty: '#2E323A', avatar: '#2A2E35', warnTx: '#FFD29E', errTx: '#FFB4AA', weak: '#FF8A7A', quizNext: '#B9D0FF', pod: '#262A31', podFade: 'rgba(38,42,49,.2)', fadeTo: 'rgba(29,32,38,1)', fadeTo0: 'rgba(29,32,38,0)', medal2: '#C9CFD8', photoChip: 'rgba(11,12,14,.7)',
+    prev: { bg: '#0B0C0E', card: '#1D2026', cardSh: 'inset 0 0 0 1px rgba(255,255,255,.08)', sub: 'rgba(255,255,255,.14)', pill: '#F4F5F6', pillTx: '#0B0C0E' } }
+};
+const THEME_KEYS = ['blue', 'navy', 'dark'];
+const THEME = THEMES[document.documentElement.getAttribute('data-theme')] ? document.documentElement.getAttribute('data-theme') : 'dark';
+const TH = THEMES[THEME];
+const C = TH.C;
+const TINT = { R: `rgba(${TH.rgb.R},.14)`, A: `rgba(${TH.rgb.A},.14)`, S: `rgba(${TH.rgb.S},.14)` };
 const GRAD = {
   R: 'linear-gradient(120deg,#3F6FF5 0%,#8FB2FF 30%,#6A5CFF 62%,#3F6FF5 100%)',
   A: 'linear-gradient(120deg,#EE8424 0%,#FFC98A 30%,#FF6A5C 62%,#EE8424 100%)',
@@ -60,7 +71,8 @@ function Icon({ name, size = 22, sw = 1.9, color = 'currentColor' }) {
     image: <g><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="10" r="1.6" /><path d="M21 16l-5-5-8 8" /></g>,
     trash: <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" />,
     run: <g><circle cx="14" cy="5" r="2" /><path d="M6 20l4-5 3 2 1 4M10 10l4-1 3 3 3 1M10 10l-2 5" /></g>,
-    info: <g><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7.5v.5" /></g>
+    info: <g><circle cx="12" cy="12" r="9" /><path d="M12 11v6M12 7.5v.5" /></g>,
+    palette: <g><path d="M12 3a9 9 0 1 0 0 18c1.1 0 1.7-.8 1.7-1.7 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-.9.8-1.7 1.7-1.7H16a5 5 0 0 0 5-5c0-4-4-7.2-9-7.2z" /><circle cx="7.5" cy="11" r="1.1" fill={color} /><circle cx="10.5" cy="7" r="1.1" fill={color} /><circle cx="15" cy="7.5" r="1.1" fill={color} /></g>
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{P[name]}</svg>;
 }
@@ -114,11 +126,11 @@ function Logo({ big }) {
       </div>
       <div className="row" style={{ gap: big ? 14 : 12 }}>
         <span className="ras-title" style={{ fontSize: fz(s), fontWeight: 900, letterSpacing: big ? -2 : -1.5, lineHeight: .9 }}>RAS</span>
-        <span style={{ width: 2, height: big ? 48 : 38, borderRadius: 1, background: 'rgba(255,255,255,.14)' }} />
+        <span style={{ width: 2, height: big ? 48 : 38, borderRadius: 1, background: `rgba(${TH.ln},.14)` }} />
         <div className="col" style={{ gap: 5 }}>
           <span style={{ fontSize: fz(big ? 32 : 26), fontWeight: 800, letterSpacing: -1.1, lineHeight: 1 }}>철인3종</span>
           <span style={{ fontSize: fz(big ? 10 : 9.5), fontWeight: 800, letterSpacing: 1.2, lineHeight: 1, whiteSpace: 'nowrap' }}>
-            <span style={{ color: C.R }}>READING</span><span style={{ color: '#4A4F57' }}> · </span><span style={{ color: C.A }}>ARTS</span><span style={{ color: '#4A4F57' }}> · </span><span style={{ color: C.S }}>SPORTS</span>
+            <span style={{ color: C.R }}>READING</span><span style={{ color: TH.sep }}> · </span><span style={{ color: C.A }}>ARTS</span><span style={{ color: TH.sep }}> · </span><span style={{ color: C.S }}>SPORTS</span>
           </span>
         </div>
       </div>
@@ -266,7 +278,7 @@ function JoinScreen({ onDone, prev, rejected }) {
     <div className="app nonav fade">
       <div style={{ padding: '48px 24px 0' }}><Logo big /></div>
       <p style={{ margin: '16px 24px 0', fontSize: fz(15), lineHeight: 1.55, color: 'var(--t2)' }}>독서 · 예술 · 스포츠 세 종목을 모두 완주하면 <b style={{ color: 'var(--tx)' }}>철인</b>이 돼요.</p>
-      {rejected && <div style={{ margin: '16px 16px 0', padding: '12px 14px', borderRadius: 14, background: 'rgba(255,107,90,.1)', boxShadow: 'inset 0 0 0 1px rgba(255,107,90,.35)', color: '#FFB4AA', fontSize: fz(13) }}>지난 신청이 반려됐어요. 학번과 이름을 다시 확인해 주세요.</div>}
+      {rejected && <div style={{ margin: '16px 16px 0', padding: '12px 14px', borderRadius: 14, background: 'rgba(255,107,90,.1)', boxShadow: 'inset 0 0 0 1px rgba(255,107,90,.35)', color: TH.errTx, fontSize: fz(13) }}>지난 신청이 반려됐어요. 학번과 이름을 다시 확인해 주세요.</div>}
       <div style={{ margin: '20px 16px 0', padding: 4, background: 'var(--sf3)', borderRadius: 18, boxShadow: 'inset 0 0 0 1px var(--line)', display: 'flex', gap: 4 }}>
         <Tab k="login" label="로그인" /><Tab k="join" label="처음 참가" />
       </div>
@@ -324,7 +336,7 @@ function WaitScreen({ req, onEdit, onCheck }) {
     <div className="app nonav fade">
       <div className="col" style={{ alignItems: 'center', padding: '110px 24px 0', gap: 18, flexGrow: 1 }}>
         <div style={{ position: 'relative', width: 120, height: 120 }}>
-          <svg className="spin" width="120" height="120" viewBox="0 0 120 120" fill="none"><defs><linearGradient id="gw" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#7AA7FF" /><stop offset="50%" stopColor="#FFB35C" /><stop offset="100%" stopColor="#5FDDB0" /></linearGradient></defs>
+          <svg className="spin" width="120" height="120" viewBox="0 0 120 120" fill="none"><defs><linearGradient id="gw" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor={C.R} /><stop offset="50%" stopColor={C.A} /><stop offset="100%" stopColor={C.S} /></linearGradient></defs>
             <circle cx="60" cy="60" r="50" stroke="var(--track)" strokeWidth="8" /><circle cx="60" cy="60" r="50" stroke="url(#gw)" strokeWidth="8" strokeLinecap="round" strokeDasharray="180 314.16" transform="rotate(-90 60 60)" /></svg>
           <span className="ras-title" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: fz(28), fontWeight: 900 }}>RAS</span>
         </div>
@@ -355,15 +367,15 @@ function Triangle({ pct, animate = true, size = 150 }) {
   const lab = { R: [80, 15], A: [138, 132], S: [22, 132] };
   return (
     <svg width={size} height={size * 140 / 150} viewBox="0 0 160 150" fill="none" role="img" aria-label={`RAS 지수 삼각형: 독서 ${pct.R}, 예술 ${pct.A}, 스포츠 ${pct.S}`} style={{ flexShrink: 0, overflow: 'visible' }}>
-      <defs><linearGradient id="rtri" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#7AA7FF" stopOpacity=".55" /><stop offset="100%" stopColor="#5FDDB0" stopOpacity=".35" /></linearGradient></defs>
-      {[1, 2, 3, 4, 5].map(k => <polygon key={k} points={tri(k / 5)} fill={k === 5 ? 'rgba(255,255,255,.025)' : 'none'} stroke={`rgba(255,255,255,${k === 5 ? .2 : .07})`} strokeWidth="1" />)}
-      {[[80, 26], [130.23, 113], [29.77, 113]].map(([x, y], i) => <line key={i} x1="80" y1="84" x2={x} y2={y} stroke="rgba(255,255,255,.08)" />)}
+      <defs><linearGradient id="rtri" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={C.R} stopOpacity=".55" /><stop offset="100%" stopColor={C.S} stopOpacity=".35" /></linearGradient></defs>
+      {[1, 2, 3, 4, 5].map(k => <polygon key={k} points={tri(k / 5)} fill={k === 5 ? `rgba(${TH.ln},.025)` : 'none'} stroke={`rgba(${TH.ln},${k === 5 ? .2 : .07})`} strokeWidth="1" />)}
+      {[[80, 26], [130.23, 113], [29.77, 113]].map(([x, y], i) => <line key={i} x1="80" y1="84" x2={x} y2={y} stroke={`rgba(${TH.ln},.08)`} />)}
       <g className={animate ? 'ras-poly' : ''}>
-        <polygon points={pts.map(p => p[1].toFixed(2) + ',' + p[2].toFixed(2)).join(' ')} fill="url(#rtri)" stroke="#F4F5F6" strokeOpacity=".9" strokeWidth="1.5" strokeLinejoin="round" />
-        {pts.map(p => <circle key={p[0]} cx={p[1]} cy={p[2]} r="4" fill={C[p[0]]} stroke="#1D2026" strokeWidth="2" />)}
+        <polygon points={pts.map(p => p[1].toFixed(2) + ',' + p[2].toFixed(2)).join(' ')} fill="url(#rtri)" stroke={TH.tx} strokeOpacity=".9" strokeWidth="1.5" strokeLinejoin="round" />
+        {pts.map(p => <circle key={p[0]} cx={p[1]} cy={p[2]} r="4" fill={C[p[0]]} stroke={TH.sf} strokeWidth="2" />)}
       </g>
-      {['R', 'A', 'S'].map(e => <text key={e} x={lab[e][0]} y={lab[e][1]} textAnchor="middle" fontSize="12" fontWeight="800" fill={C[e]}>{e} <tspan fill="#C9CDD3" fontWeight="700">{pct[e] || 0}</tspan></text>)}
-      {!allFull && <text x={lab[weakest][0]} y={lab[weakest][1] + (weakest === 'R' ? -12 : 13)} textAnchor="middle" fontSize="9" fontWeight="800" fill="#FF8A7A">보강</text>}
+      {['R', 'A', 'S'].map(e => <text key={e} x={lab[e][0]} y={lab[e][1]} textAnchor="middle" fontSize="12" fontWeight="800" fill={C[e]}>{e} <tspan fill={TH.t15} fontWeight="700">{pct[e] || 0}</tspan></text>)}
+      {!allFull && <text x={lab[weakest][0]} y={lab[weakest][1] + (weakest === 'R' ? -12 : 13)} textAnchor="middle" fontSize="9" fontWeight="800" fill={TH.weak}>보강</text>}
     </svg>
   );
 }
@@ -381,8 +393,60 @@ function LevelTrack({ value, conv = 0, th, color, h = 6 }) {
   );
 }
 
+function ThemePreview({ k }) {
+  const T = THEMES[k], p = T.prev;
+  return (
+    <div className="col" style={{ height: 156, borderRadius: 16, overflow: 'hidden', background: p.bg, padding: '12px 10px', gap: 8 }}>
+      <span style={{ fontSize: 15, fontWeight: 900, letterSpacing: -.5, lineHeight: 1, textAlign: 'left' }}>{['R', 'A', 'S'].map(e => <span key={e} style={{ color: T.C[e] }}>{e}</span>)}<span style={{ fontSize: 10, fontWeight: 800, color: T.tx }}> 철인3종</span></span>
+      <div className="col" style={{ borderRadius: 10, background: p.card, boxShadow: p.cardSh, padding: '9px 8px', gap: 6, alignItems: 'flex-start' }}>
+        <span style={{ width: '50%', height: 5, borderRadius: 3, background: p.sub }} />
+        <span style={{ fontSize: 13, fontWeight: 800, color: T.tx, lineHeight: 1 }}>올림픽</span>
+        {['R', 'A', 'S'].map((e, i) => <span key={e} style={{ height: 5, borderRadius: 3, background: T.C[e], width: [80, 60, 45][i] + '%' }} />)}
+      </div>
+      <span style={{ marginTop: 'auto', height: 20, borderRadius: 7, background: p.pill, color: p.pillTx, fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>기록하기</span>
+    </div>
+  );
+}
+
+function ThemeSheet({ onClose }) {
+  const [sel, setSel] = useState(THEME);
+  function apply() {
+    if (sel === THEME) { onClose(); return; }
+    store.set('ras_theme', sel);
+    location.reload();
+  }
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 45, background: 'var(--scrim)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+      <div className="col fade" onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 480, background: 'var(--sheet)', borderRadius: '28px 28px 0 0', padding: '10px 18px calc(env(safe-area-inset-bottom,0px) + 22px)', gap: 18, boxShadow: '0 -12px 40px rgba(0,0,0,.25)' }}>
+        <span style={{ alignSelf: 'center', width: 40, height: 5, borderRadius: 3, background: 'var(--track)' }} />
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div className="col" style={{ gap: 4 }}><span style={{ fontSize: fz(21), fontWeight: 800, letterSpacing: -.6 }}>앱 색상</span><span className="muted" style={{ fontSize: fz(13) }}>마음에 드는 화면 색을 골라 보세요</span></div>
+          <button type="button" aria-label="닫기" onClick={onClose} style={{ width: 34, height: 34, borderRadius: 999, border: 0, background: 'var(--sf2)', color: 'var(--t2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="close" size={16} sw={2.4} /></button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 12 }}>
+          {THEME_KEYS.map(k => {
+            const on = sel === k;
+            return (
+              <button key={k} type="button" onClick={() => setSel(k)} className="col" style={{ border: 0, padding: 0, background: 'transparent', gap: 8, alignItems: 'stretch' }}>
+                <div style={{ position: 'relative', borderRadius: 18, padding: 4, background: '#FFFFFF', boxShadow: on ? '0 0 0 2px #1667E8, 0 8px 20px rgba(22,103,232,.22)' : `0 0 0 1px rgba(${TH.ln},.14)` }}>
+                  {on && <span style={{ position: 'absolute', top: -7, right: -7, zIndex: 1, width: 24, height: 24, borderRadius: 999, background: '#1667E8', boxShadow: '0 0 0 3px var(--sheet)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="check" size={13} sw={3.2} /></span>}
+                  <ThemePreview k={k} />
+                </div>
+                <span className="row" style={{ justifyContent: 'center', gap: 4, fontSize: fz(14), fontWeight: on ? 800 : 600, color: on ? 'var(--tx)' : 'var(--t2)' }}>{THEMES[k].name}{k === 'blue' && <span style={{ fontSize: fz(10), fontWeight: 800, color: '#1667E8', background: '#E3EFFF', padding: '2px 6px', borderRadius: 5 }}>기본</span>}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="row" style={{ gap: 8, padding: '11px 13px', borderRadius: 12, background: 'var(--sf3)', fontSize: fz(12), lineHeight: 1.45, color: 'var(--t15)' }}><span style={{ flexShrink: 0, color: 'var(--r)', display: 'flex' }}><Icon name="info" size={16} sw={2} /></span><span>고른 색은 <b style={{ color: 'var(--tx)' }}>이 휴대폰에만</b> 저장돼요. 기록과 랭킹에는 영향이 없어요.</span></div>
+        <button type="button" className="btn" onClick={apply}>적용하기</button>
+      </div>
+    </div>
+  );
+}
+
 function HomeScreen({ go, refreshKey }) {
   const [st, reload] = useAsync(() => api('home'), [refreshKey]);
+  const [themeOpen, setThemeOpen] = useState(false);
   if (st.loading && !st.data) return <div className="col" style={{ padding: 16, gap: 12 }}><div className="skel" style={{ height: 80 }} /><div className="skel" style={{ height: 250 }} /><div className="skel" style={{ height: 220 }} /></div>;
   if (st.error) return <ErrorBox msg={st.error} onRetry={reload} />;
   const d = st.data;
@@ -398,11 +462,13 @@ function HomeScreen({ go, refreshKey }) {
     <div className="fade">
       <header className="row" style={{ padding: '22px 20px 0', gap: 12 }}>
         <div style={{ flexGrow: 1 }}><Logo /></div>
+        <button type="button" aria-label="앱 색상" onClick={() => setThemeOpen(true)} style={{ width: 42, height: 42, borderRadius: 999, border: 0, background: 'var(--sf)', boxShadow: 'var(--cardsh)', color: 'var(--r)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, alignSelf: 'flex-start' }}><Icon name="palette" size={20} sw={1.8} /></button>
       </header>
-      {t.overall >= 5 && <button onClick={() => go('ironman')} style={{ margin: '14px 16px 0', width: 'calc(100% - 32px)', border: 0, borderRadius: 18, padding: '14px 16px', background: 'linear-gradient(90deg,rgba(245,196,81,.2),rgba(29,32,38,1))', boxShadow: 'inset 0 0 0 1.5px rgba(245,196,81,.5)', color: 'var(--tx)', fontSize: fz(15), fontWeight: 800, textAlign: 'left' }}>🏅 철인 달성! 기록 보기 →</button>}
-      <section className="card col" style={{ margin: '14px 16px 0', padding: 20, gap: 16, background: 'radial-gradient(120% 90% at 0% 0%, rgba(122,167,255,.13) 0%, rgba(29,32,38,0) 55%), var(--sf)' }}>
+      {themeOpen && <ThemeSheet onClose={() => setThemeOpen(false)} />}
+      {t.overall >= 5 && <button onClick={() => go('ironman')} style={{ margin: '14px 16px 0', width: 'calc(100% - 32px)', border: 0, borderRadius: 18, padding: '14px 16px', background: `linear-gradient(90deg,rgba(245,196,81,.2),${TH.fadeTo})`, boxShadow: 'inset 0 0 0 1.5px rgba(245,196,81,.5)', color: 'var(--tx)', fontSize: fz(15), fontWeight: 800, textAlign: 'left' }}>🏅 철인 달성! 기록 보기 →</button>}
+      <section className="card col" style={{ margin: '14px 16px 0', padding: 20, gap: 16, background: `radial-gradient(120% 90% at 0% 0%, rgba(${TH.rgb.R},.13) 0%, ${TH.fadeTo0} 55%), var(--sf)` }}>
         <div className="row" style={{ gap: 10 }}>
-          <span style={{ width: 32, height: 32, borderRadius: 999, background: '#2A2E35', boxShadow: 'inset 0 0 0 1.5px var(--r)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: fz(13), fontWeight: 700 }}>{d.profile.nick.charAt(0)}</span>
+          <span style={{ width: 32, height: 32, borderRadius: 999, background: TH.avatar, boxShadow: 'inset 0 0 0 1.5px var(--r)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: fz(13), fontWeight: 700 }}>{d.profile.nick.charAt(0)}</span>
           <span style={{ fontSize: fz(15), fontWeight: 700 }}>{d.profile.nick}</span>
           <span className="muted" style={{ fontSize: fz(13) }}>{d.profile.grade}학년</span>
         </div>
@@ -424,12 +490,12 @@ function HomeScreen({ go, refreshKey }) {
             </div>
           </div>
         </div>
-        <button onClick={() => go('record', { tab: d.next.need && d.next.need[0] ? d.next.need[0].event : 'R' })} className="row" style={{ border: 0, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,.06)', gap: 10, background: 'none', color: 'inherit', textAlign: 'left', width: '100%' }}>
+        <button onClick={() => go('record', { tab: d.next.need && d.next.need[0] ? d.next.need[0].event : 'R' })} className="row" style={{ border: 0, paddingTop: 16, borderTop: '1px solid var(--line)', gap: 10, background: 'none', color: 'inherit', textAlign: 'left', width: '100%' }}>
           <span style={{ fontSize: fz(12), fontWeight: 700, color: 'var(--bg)', background: 'var(--a)', padding: '3px 8px', borderRadius: 6 }}>NEXT</span>
           <span style={{ flexGrow: 1, fontSize: fz(13), color: 'var(--t15)' }}>
             {d.next.done ? '철인 달성! 세 종목 모두 LV.5예요' : <>{d.next.need.map((n, i) => <span key={n.event}>{i ? ' · ' : ''}{NAME[n.event]} <b style={{ color: 'var(--tx)' }}>{fmtNum(n.left)}{n.unit}</b></span>)} 더 하면 <b style={{ color: 'var(--tx)' }}>{d.next.levelName}</b></>}
           </span>
-          <Icon name="chev" size={16} sw={2.2} color="#5F656E" />
+          <Icon name="chev" size={16} sw={2.2} color={TH.t3} />
         </button>
       </section>
 
@@ -443,7 +509,7 @@ function HomeScreen({ go, refreshKey }) {
             const lv = t.lv[e], unit = L.unit[e];
             const left = lv < 5 ? fmtNum(Math.round((L[e][lv] - t[e]) * 100) / 100) : null;
             return (
-              <button key={e} onClick={() => go('record', { tab: e })} className="col" style={{ border: 0, padding: '15px 16px 16px', gap: 12, borderTop: i ? '1px solid rgba(255,255,255,.06)' : 0, background: 'none', color: 'inherit', textAlign: 'left', alignItems: 'stretch' }}>
+              <button key={e} onClick={() => go('record', { tab: e })} className="col" style={{ border: 0, padding: '15px 16px 16px', gap: 12, borderTop: i ? '1px solid var(--line)' : 0, background: 'none', color: 'inherit', textAlign: 'left', alignItems: 'stretch' }}>
                 <div className="row" style={{ gap: 12 }}>
                   <span style={{ width: 36, height: 36, borderRadius: 11, background: TINT[e], color: C[e], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: fz(17), fontWeight: 800, flexShrink: 0 }}>{e}</span>
                   <div className="col" style={{ flexGrow: 1, gap: 2, minWidth: 0 }}>
@@ -454,7 +520,7 @@ function HomeScreen({ go, refreshKey }) {
                     </span>
                   </div>
                   <span style={{ fontSize: fz(24), fontWeight: 800, letterSpacing: -.6, whiteSpace: 'nowrap' }}>{fmtNum(t[e])}<span className="muted" style={{ fontSize: fz(13), fontWeight: 600, letterSpacing: 0, paddingLeft: 2 }}>{unit}</span></span>
-                  <Icon name="chev" size={14} sw={2.4} color="#5F656E" />
+                  <Icon name="chev" size={14} sw={2.4} color={TH.t3} />
                 </div>
                 <LevelTrack value={t[e]} conv={e === 'S' ? t.conv || 0 : 0} th={L[e]} color={C[e]} />
               </button>
@@ -476,7 +542,7 @@ function HomeScreen({ go, refreshKey }) {
             return (
               <div key={w.date} className="col" style={{ alignItems: 'center', gap: 8 }}>
                 <div className="col" style={{ height: 56, justifyContent: 'flex-end' }}>
-                  {empty ? <div style={{ width: 16, height: 4, borderRadius: 2, background: '#2E323A' }} /> :
+                  {empty ? <div style={{ width: 16, height: 4, borderRadius: 2, background: TH.empty }} /> :
                     <div className="col" style={{ width: 16, borderRadius: 5, overflow: 'hidden', gap: 2 }}>{['R', 'A', 'S'].map(e => hs[e] > 0 && <div key={e} style={{ height: Math.max(3, hs[e]), background: C[e] }} />)}</div>}
                 </div>
                 <span style={{ fontSize: fz(12), fontWeight: today ? 700 : 500, color: today ? 'var(--tx)' : 'var(--t3)' }}>{w.label}</span>
@@ -573,7 +639,7 @@ function RankingScreen() {
     <div className="col" style={{ alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
       <span style={{ width: 44, height: 44, borderRadius: 999, background: 'var(--sf2)', boxShadow: `inset 0 0 0 2px ${medal}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: fz(16), fontWeight: 800 }}>{p.nick.charAt(0)}</span>
       <span style={{ fontSize: fz(13), fontWeight: 700, textAlign: 'center' }}>{p.nick}{p.me ? ' (나)' : ''}</span><span className="dim" style={{ fontSize: fz(11) }}>{p.grade}학년{p.overall >= 5 ? ' · 철인' : ''}</span>
-      <div className="col" style={{ width: '100%', height: h, borderRadius: '14px 14px 0 0', background: 'linear-gradient(180deg,#262A31 0%,rgba(38,42,49,.2) 100%)', boxShadow: `inset 0 1px 0 ${medal}`, alignItems: 'center', paddingTop: 8 }}>
+      <div className="col" style={{ width: '100%', height: h, borderRadius: '14px 14px 0 0', background: `linear-gradient(180deg,${TH.pod} 0%,${TH.podFade} 100%)`, boxShadow: `inset 0 1px 0 ${medal}`, alignItems: 'center', paddingTop: 8 }}>
         <span style={{ fontSize: fz(22), fontWeight: 900, color: medal }}>{p.rank}</span><span style={{ fontSize: fz(12), fontWeight: 700, color: 'var(--t15)' }}>{fmtNum(p.value)}{unit}</span></div>
     </div>
   );
@@ -591,7 +657,7 @@ function RankingScreen() {
       {st.loading && !d ? <div style={{ padding: 40, display: 'flex', justifyContent: 'center' }}><Spinner /></div> : st.error ? <ErrorBox msg={st.error} onRetry={reload} /> : (
         <>
           <div style={{ padding: '18px 20px 0', display: 'grid', gridTemplateColumns: 'repeat(3,minmax(0,1fr))', gap: 10, alignItems: 'end' }}>
-            <Pod p={d.list[1]} h={64} medal="#C9CFD8" /><Pod p={d.list[0]} h={88} medal="#F5C451" /><Pod p={d.list[2]} h={48} medal="#D99A6C" />
+            <Pod p={d.list[1]} h={64} medal={TH.medal2} /><Pod p={d.list[0]} h={88} medal="#F5C451" /><Pod p={d.list[2]} h={48} medal="#D99A6C" />
           </div>
           <div className="pad"><div style={{ background: 'var(--sf)', borderRadius: '0 0 22px 22px', boxShadow: 'inset 0 0 0 1px var(--line)' }}>
             {d.list.slice(3).map((p, i) => (
@@ -604,7 +670,7 @@ function RankingScreen() {
             {d.list.length <= 3 && <div style={{ padding: 16, fontSize: fz(13), color: 'var(--t3)', textAlign: 'center' }}>참가자가 늘면 여기에 순위가 보여요</div>}
           </div></div>
           {d.me && d.me.rank > 3 && (
-            <div className="pad" style={{ paddingTop: 10 }}><div className="row" style={{ height: 58, borderRadius: 18, background: 'linear-gradient(90deg,rgba(122,167,255,.16) 0%,rgba(29,32,38,1) 70%)', boxShadow: 'inset 0 0 0 1.5px rgba(122,167,255,.45)', gap: 10, padding: '0 14px' }}>
+            <div className="pad" style={{ paddingTop: 10 }}><div className="row" style={{ height: 58, borderRadius: 18, background: `linear-gradient(90deg,rgba(${TH.rgb.R},.16) 0%,${TH.fadeTo} 70%)`, boxShadow: `inset 0 0 0 1.5px rgba(${TH.rgb.R},.45)`, gap: 10, padding: '0 14px' }}>
               <span style={{ width: 22, fontSize: fz(15), fontWeight: 800, textAlign: 'center' }}>{d.me.rank}</span>
               <div className="col" style={{ flexGrow: 1 }}><span style={{ fontSize: fz(14), fontWeight: 800 }}>{d.me.nick} (나)</span><span style={{ fontSize: fz(11), fontWeight: 600, color: 'var(--s)' }}>{d.me.grade}학년</span></div>
               <div className="row" style={{ gap: 3 }}><Mini e="R" n={d.me.lv.R} /><Mini e="A" n={d.me.lv.A} /><Mini e="S" n={d.me.lv.S} /></div>
@@ -662,7 +728,7 @@ function ReadingTab({ go }) {
       <label className="row" style={{ height: 52, padding: '0 16px', borderRadius: 16, background: 'var(--sf)', boxShadow: 'inset 0 0 0 1.5px var(--r),0 0 0 4px rgba(122,167,255,.12)', gap: 10, color: 'var(--r)' }}>
         <Icon name="search" size={20} sw={2.2} /><input id="bq" value={q} onChange={e => setQ(e.target.value)} placeholder="책 제목이나 저자로 찾기" aria-label="책 검색" style={{ flexGrow: 1, border: 0, outline: 'none', background: 'transparent', fontSize: fz(16), fontWeight: 600, color: 'var(--tx)' }} />
       </label>
-      <button onClick={() => go('bookEssay')} className="row" style={{ borderRadius: 18, border: 0, boxShadow: 'inset 0 0 0 1.5px rgba(255,255,255,.14)', padding: '14px 16px', gap: 12, background: 'none', color: 'var(--tx)', textAlign: 'left' }}>
+      <button onClick={() => go('bookEssay')} className="row" style={{ borderRadius: 18, border: 0, boxShadow: `inset 0 0 0 1.5px rgba(${TH.ln},.14)`, padding: '14px 16px', gap: 12, background: 'none', color: 'var(--tx)', textAlign: 'left' }}>
         <span style={{ width: 36, height: 36, borderRadius: 12, background: 'var(--sf2)', color: 'var(--t2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icon name="plus" size={18} sw={2.2} /></span>
         <div className="col" style={{ flexGrow: 1, gap: 2 }}><span style={{ fontSize: fz(14), fontWeight: 700 }}>찾는 책이 목록에 없나요?</span><span className="muted" style={{ fontSize: fz(12) }}>직접 등록하고 서술형 2문항 · 선생님 확인 후 반영</span></div>
       </button>
@@ -680,7 +746,7 @@ function ReadingTab({ go }) {
                   {b.passCount > 0 && <span className="chip" style={{ background: 'var(--sf2)', color: 'var(--t2)', fontWeight: 600 }}>{b.passCount}명 통과</span>}
                 </div>
               </div>
-              {!b.passed && <Icon name="chev" size={20} sw={2.2} color="#5F656E" />}
+              {!b.passed && <Icon name="chev" size={20} sw={2.2} color={TH.t3} />}
             </button>))}
           {list.length === 0 && <div className="card" style={{ padding: 18, textAlign: 'center', color: 'var(--t2)', fontSize: fz(14) }}>찾는 책이 없어요. 위의 "목록에 없나요?"로 등록해 주세요.</div>}
           {list.length > 60 && <span className="dim" style={{ fontSize: fz(12), textAlign: 'center' }}>검색하면 나머지 {list.length - 60}권도 찾을 수 있어요</span>}
@@ -732,7 +798,7 @@ function QuizScreen({ back, replace, book }) {
           <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: fz(17), fontWeight: 800 }}>{left}</span>
         </div>
       </header>
-      <div className="row" style={{ padding: '18px 20px 0', gap: 4 }}>{data.questions.map((_, i) => <div key={i} style={{ flexGrow: 1, height: 4, borderRadius: 2, background: i < idx ? C.R : i === idx ? '#B9D0FF' : 'var(--track)' }} />)}</div>
+      <div className="row" style={{ padding: '18px 20px 0', gap: 4 }}>{data.questions.map((_, i) => <div key={i} style={{ flexGrow: 1, height: 4, borderRadius: 2, background: i < idx ? C.R : i === idx ? TH.quizNext : 'var(--track)' }} />)}</div>
       <div key={idx} className="col fade" style={{ padding: '30px 20px 0', gap: 12 }}>
         <span style={{ fontSize: fz(14), fontWeight: 800, color: C.R }}>Q {idx + 1} <span className="dim">/ {data.questions.length}</span></span>
         <span style={{ fontSize: fz(22), fontWeight: 800, letterSpacing: -.7, lineHeight: 1.4 }}>{q.q}</span>
@@ -928,7 +994,7 @@ function ArtTab({ go }) {
       <span className="ras-badge" style={{ width: 46, height: 46, borderRadius: 14, backgroundImage: GRAD.A, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.45), 0 8px 20px rgba(255,154,60,.32)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={icon} size={24} sw={2.2} /></span>
       <div className="row" style={{ gap: 6, marginTop: 12, flexWrap: 'wrap' }}><span style={{ fontSize: fz(15), fontWeight: 800, letterSpacing: -0.3 }}>{title}</span><span className="chip" style={{ color: chipC, background: chipBg, fontSize: fz(10) }}>{chip}</span></div>
       <span style={{ fontSize: fz(12), lineHeight: 1.45, color: 'var(--t15)', marginTop: 4, minHeight: 35 }}>{sub}</span>
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', marginTop: 10, paddingTop: 8, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.1)' }}><span style={{ fontSize: fz(18), fontWeight: 800, color: C.A }}>+1P</span><span style={{ fontSize: fz(12), fontWeight: 700 }}>{foot}</span></div>
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', marginTop: 10, paddingTop: 8, boxShadow: 'inset 0 1px 0 var(--line)' }}><span style={{ fontSize: fz(18), fontWeight: 800, color: C.A }}>+1P</span><span style={{ fontSize: fz(12), fontWeight: 700 }}>{foot}</span></div>
     </button>
   );
   const Method = ({ icon, title, sub, pts, chip, chipC, chipBg, onClick }) => (
@@ -1106,7 +1172,7 @@ function SportTab({ go }) {
       <span className="ras-badge" style={{ width: 46, height: 46, borderRadius: 14, backgroundImage: GRAD.S, boxShadow: `inset 0 1px 0 rgba(255,255,255,.45), 0 8px 20px ${GLOW.S}`, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name={icon} size={24} sw={2.2} /></span>
       <div className="row" style={{ gap: 6, marginTop: 12, flexWrap: 'wrap' }}><span style={{ fontSize: fz(15), fontWeight: 800, letterSpacing: -0.3 }}>{title}</span><span className="chip" style={{ color: chipC, background: chipBg, fontSize: fz(10) }}>{chip}</span></div>
       <span style={{ fontSize: fz(12), lineHeight: 1.45, color: 'var(--t15)', marginTop: 4, minHeight: 35 }}>{sub}</span>
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', marginTop: 10, paddingTop: 8, boxShadow: 'inset 0 1px 0 rgba(255,255,255,.1)' }}><span style={{ fontSize: fz(16), fontWeight: 800, color: C.S }}>{amount}</span><span style={{ fontSize: fz(12), fontWeight: 700 }}>{foot}</span></div>
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', marginTop: 10, paddingTop: 8, boxShadow: 'inset 0 1px 0 var(--line)' }}><span style={{ fontSize: fz(16), fontWeight: 800, color: C.S }}>{amount}</span><span style={{ fontSize: fz(12), fontWeight: 700 }}>{foot}</span></div>
     </button>
   );
   let summary = <div className="skel" style={{ height: 118 }} />;
@@ -1268,9 +1334,9 @@ function SportPhotoScreen({ back, replace }) {
       <div key={i} className="col" style={{ gap: 6, minWidth: 0 }}>
         <div style={{ position: 'relative', height: h, borderRadius: 16, overflow: 'hidden', boxShadow: 'inset 0 0 0 1px var(--line)', background: 'var(--sf3)' }}>
           <img src={s.dataUrl} alt={label + ' 사진'} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-          <span style={{ position: 'absolute', left: 8, top: 8, fontSize: fz(11), fontWeight: 800, padding: '3px 8px', borderRadius: 8, background: 'rgba(11,12,14,.7)', color: 'var(--tx)' }}>{label}</span>
-          <span style={{ position: 'absolute', left: 8, bottom: 8, fontSize: fz(11), fontWeight: 700, padding: '3px 8px', borderRadius: 8, background: 'rgba(11,12,14,.7)', color: C.S }}>{hhmm(s.t)} 촬영</span>
-          <button type="button" aria-label={label + ' 다시 찍기'} onClick={() => take(i)} style={{ position: 'absolute', right: 8, top: 8, width: 32, height: 32, borderRadius: 10, border: 0, background: 'rgba(11,12,14,.7)', color: 'var(--tx)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="camera" size={16} sw={2.2} /></button>
+          <span style={{ position: 'absolute', left: 8, top: 8, fontSize: fz(11), fontWeight: 800, padding: '3px 8px', borderRadius: 8, background: TH.photoChip, color: 'var(--tx)' }}>{label}</span>
+          <span style={{ position: 'absolute', left: 8, bottom: 8, fontSize: fz(11), fontWeight: 700, padding: '3px 8px', borderRadius: 8, background: TH.photoChip, color: C.S }}>{hhmm(s.t)} 촬영</span>
+          <button type="button" aria-label={label + ' 다시 찍기'} onClick={() => take(i)} style={{ position: 'absolute', right: 8, top: 8, width: 32, height: 32, borderRadius: 10, border: 0, background: TH.photoChip, color: 'var(--tx)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="camera" size={16} sw={2.2} /></button>
         </div>
         <span className="muted" style={{ fontSize: fz(12), padding: '0 2px' }}>{i === 0 && need === 2 && use.length === 2 ? '다시 찍으면 ②도 지워져요' : hasLoc(s) ? '위치 기록됨' : '위치 없음'}</span>
       </div>
@@ -1336,7 +1402,7 @@ function RunReadyScreen({ back, go }) {
         <div className="card col" style={{ padding: 20, gap: 18 }}>
           <div className="row" style={{ gap: 14 }}><Badge e="S" size={56} /><div className="col" style={{ gap: 2 }}><span style={{ fontSize: fz(20), fontWeight: 800 }}>GPS 측정</span><span className="muted" style={{ fontSize: fz(13) }}>뛰어도 걸어도 산에 올라도 거리·시간 자동 기록</span></div></div>
           <div className="col" style={{ gap: 12 }}>{checks.map((c, i) => <div key={i} className="row" style={{ gap: 10, alignItems: 'flex-start' }}><span style={{ width: 20, height: 20, borderRadius: 99, background: TINT.S, color: C.S, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}><Icon name="check" size={13} sw={3} /></span><span style={{ fontSize: fz(14), lineHeight: 1.5, color: 'var(--t15)' }}>{c[0] && <b style={{ color: 'var(--tx)' }}>{c[0]}</b>}{c[1]}</span></div>)}</div>
-          <div className="row" style={{ gap: 10, alignItems: 'flex-start', padding: '12px 14px', borderRadius: 14, background: 'rgba(255,179,92,.1)', boxShadow: 'inset 0 0 0 1px rgba(255,179,92,.25)', color: '#FFD29E', fontSize: fz(13), lineHeight: 1.5 }}><span style={{ flexShrink: 0, marginTop: 1 }}><Icon name="warn" size={16} sw={2.2} /></span><span>움직이는 동안 <b>화면을 켜 두고 이 앱을 띄워 두세요.</b> 다른 앱으로 넘어가면 측정이 멈춰요.</span></div>
+          <div className="row" style={{ gap: 10, alignItems: 'flex-start', padding: '12px 14px', borderRadius: 14, background: 'rgba(255,179,92,.1)', boxShadow: 'inset 0 0 0 1px rgba(255,179,92,.25)', color: TH.warnTx, fontSize: fz(13), lineHeight: 1.5 }}><span style={{ flexShrink: 0, marginTop: 1 }}><Icon name="warn" size={16} sw={2.2} /></span><span>움직이는 동안 <b>화면을 켜 두고 이 앱을 띄워 두세요.</b> 다른 앱으로 넘어가면 측정이 멈춰요.</span></div>
         </div>
         <div className="row" style={{ gap: 8, padding: '0 4px', fontSize: fz(13) }}>
           <span style={{ width: 8, height: 8, borderRadius: 99, background: good ? C.S : 'var(--a)', boxShadow: `0 0 0 4px ${good ? 'rgba(95,221,176,.18)' : 'rgba(255,179,92,.18)'}` }} />
@@ -1446,7 +1512,7 @@ function RunScreen({ back, replace }) {
           {run.paused ? <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z" /></svg> : <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" /></svg>}</button>
         <button onPointerDown={holdStart} onPointerUp={holdEnd} onPointerLeave={holdEnd} onContextMenu={e => e.preventDefault()} style={{ position: 'relative', overflow: 'hidden', height: 76, flexGrow: 1, maxWidth: 230, borderRadius: 999, border: 0, background: 'var(--tx)', color: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'none' }}>
           <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: holding ? Math.min(100, (holding - 1) * 100) + '%' : 0, background: 'rgba(255,107,90,.35)' }} />
-          <span style={{ position: 'relative', fontSize: fz(18), fontWeight: 800 }}>종료</span><span style={{ position: 'relative', fontSize: fz(11), fontWeight: 600, color: '#5F656E' }}>길게 눌러서 종료</span></button>
+          <span style={{ position: 'relative', fontSize: fz(18), fontWeight: 800 }}>종료</span><span style={{ position: 'relative', fontSize: fz(11), fontWeight: 600, color: TH.t3 }}>길게 눌러서 종료</span></button>
       </div>
       <button onClick={discard} style={{ marginTop: 14, alignSelf: 'center', background: 'none', border: 0, fontSize: fz(13), fontWeight: 600, color: 'var(--t2)', textDecoration: 'underline', textUnderlineOffset: 3 }}>기록하지 않고 나가기</button>
       {busy && <Busy text="기록 저장 중" />}
